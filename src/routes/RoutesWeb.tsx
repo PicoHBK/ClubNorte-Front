@@ -1,0 +1,30 @@
+import Footer from "@/components/headfoot/Footer";
+import Header from "@/components/headfoot/Header";
+import Home from "@/pages/Home";
+import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
+
+const Layout = () => (
+  <>
+    <Header />
+    <Outlet />
+    <Footer />
+  </>
+);
+const routers = createBrowserRouter([
+  {
+    element: <Layout />,
+    children: [
+      {
+        path: "/",
+        element: <Home />,
+        errorElement: <h1>FAIL HOME</h1>,
+      },
+    ],
+  },
+]);
+
+function RoutesWeb() {
+  return <RouterProvider router={routers} />;
+}
+
+export default RoutesWeb;
