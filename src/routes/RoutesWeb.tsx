@@ -1,5 +1,6 @@
 import Footer from "@/components/headfoot/Footer";
 import Header from "@/components/headfoot/Header";
+import Admin from "@/pages/Admin/Admin";
 import Home from "@/pages/Home";
 import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 
@@ -19,6 +20,11 @@ const routers = createBrowserRouter([
         element: <Home />,
         errorElement: <h1>FAIL HOME</h1>,
       },
+      {
+        path: "/admin",
+        element: <Admin />,
+        errorElement: <h1>FAIL ADMIN</h1>,
+      }
     ],
   },
 ]);
