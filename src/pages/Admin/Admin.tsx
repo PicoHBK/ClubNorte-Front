@@ -1,96 +1,114 @@
-import { LogOut, User, Loader2 } from 'lucide-react'
-import apiClubNorte from "@/api/apiClubNorte"
-import { useMutation } from "@tanstack/react-query"
-import { useNavigate } from "react-router-dom"
-
-// Función para hacer logout
-const postLogout = async () => {
-  const { data } = await apiClubNorte.post("/api/v1/auth/logout", {}, {
-    withCredentials: true, // necesario para enviar cookies
-  })
-  return data
-}
+import useUserStore from '@/store/useUserStore'
+import { Loader2 } from 'lucide-react'
+import PointSaleCard from './Cards/PointSaleCard'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import ProductAdmin from './ProductAdmin'
+import CategoryAdmin from './CategoryAdmin'
+import UserAdmin from './UserAdmin'
+import MovementStockAdmin from './MovementStockAdmin'
 
 const Admin = () => {
-  const navigate = useNavigate()
+  const isLoading = useUserStore((state) => state.isLoading)
+  const user = useUserStore((state) => state.user)
+  const getUserFullName = useUserStore((state) => state.getUserFullName)
+  const userPointSales = useUserStore((state) => state.getPointSales()) // ✅ puntos de venta del usuario
 
-  const { mutate: logout, isPending } = useMutation({
-    mutationFn: postLogout,
-    onSuccess: () => {
-      console.log("Logout exitoso")
-      // Redirigir al login después del logout exitoso
-      navigate("/")
-    },
-    onError: (error) => {
-      console.error("Error en logout:", error)
-      // Si hay error, NO redirigir automáticamente
-      // Mostrar mensaje de error o manejar según tu lógica
-    },
-  })
+  // Si está cargando, mostrar loading
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="text-white flex items-center gap-3">
+          <Loader2 className="animate-spin" size={24} />
+          <span>Cargando...</span>
+        </div>
+      </div>
+    )
+  }
 
-  const handleLogout = () => {
-    logout()
+  // Si no hay usuario, mostrar pantalla vacía
+  if (!user) {
+    return null
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Header con logout */}
-      <header className="bg-white/10 backdrop-blur-md border-b border-white/20">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex justify-between items-center">
-            {/* Logo/Título */}
-            <div className="flex items-center gap-3">
-              <User className="text-indigo-400" size={24} />
-              <h1 className="text-2xl font-bold text-white">Panel Admin</h1>
-            </div>
-
-            {/* Botón Logout */}
-            <button
-              onClick={handleLogout}
-              disabled={isPending}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 hover:text-red-300 border border-red-500/30 hover:border-red-500/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isPending ? (
-                <>
-                  <Loader2 className="animate-spin" size={18} />
-                  Cerrando...
-                </>
-              ) : (
-                <>
-                  <LogOut size={18} />
-                  Cerrar Sesión
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Contenido principal */}
       <main className="max-w-7xl mx-auto px-6 py-8">
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 p-8">
-          <h2 className="text-3xl font-bold text-white mb-4">Bienvenido al Admin</h2>
+
+        {/* Encabezado principal */}
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 p-8 mb-8">
+          <h2 className="text-3xl font-bold text-white mb-4">
+            Bienvenido {getUserFullName()}
+          </h2>
           <p className="text-slate-300 text-lg">
-            Panel de administración - Aquí puedes gestionar todo el contenido.
+            Panel de gestión de Puntos de Venta
           </p>
           
-          {/* Ejemplo de cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-            <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-              <h3 className="text-xl font-semibold text-white mb-2">Usuarios</h3>
-              <p className="text-slate-400">Gestionar usuarios del sistema</p>
-            </div>
-            
-            <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-              <h3 className="text-xl font-semibold text-white mb-2">Contenido</h3>
-              <p className="text-slate-400">Administrar contenido de la web</p>
-            </div>
-            
-            <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-              <h3 className="text-xl font-semibold text-white mb-2">Configuración</h3>
-              <p className="text-slate-400">Ajustes generales del sistema</p>
+          {/* Información del usuario */}
+          <div className="bg-white/5 rounded-xl p-4 mt-6 border border-white/10">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <span className="text-slate-400">Email:</span>
+                <p className="text-white font-medium">{user.email}</p>
+              </div>
+              <div>
+                <span className="text-slate-400">Rol:</span>
+                <p className="text-white font-medium">{user.role?.name}</p>
+              </div>
+              <div>
+                <span className="text-slate-400">Admin:</span>
+                <p className="text-white font-medium">{user.isAdmin ? 'Sí' : 'No'}</p>
+              </div>
             </div>
           </div>
+        </div>
+
+        {/* Sección de Puntos de Venta del usuario */}
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 p-8 mb-12">
+          <h3 className="text-2xl font-semibold text-white mb-6">
+            Tus Puntos de Venta Asignados
+          </h3>
+
+          {userPointSales.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {userPointSales.map((pointSale) => (
+                <PointSaleCard key={pointSale.id} pointSale={pointSale} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-slate-300 text-lg">
+                No tienes puntos de venta asignados actualmente.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Sección con Tabs */}
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 p-8">
+          <Tabs defaultValue="productos" className="w-full">
+            <TabsList className="grid w-full grid-cols-4 bg-white/5 rounded-xl mb-6">
+              <TabsTrigger value="productos" className="text-white data-[state=active]:bg-white/20 rounded-xl">Productos</TabsTrigger>
+              <TabsTrigger value="categorias" className="text-white data-[state=active]:bg-white/20 rounded-xl">Categorías</TabsTrigger>
+              <TabsTrigger value="reponer" className="text-white data-[state=active]:bg-white/20 rounded-xl">Reponer</TabsTrigger>
+              <TabsTrigger value="users" className="text-white data-[state=active]:bg-white/20 rounded-xl">Usuarios</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="productos">
+              <ProductAdmin />
+            </TabsContent>
+
+            <TabsContent value="categorias">
+              <CategoryAdmin />
+            </TabsContent>
+
+            <TabsContent value="reponer">
+              <MovementStockAdmin />
+            </TabsContent>
+
+            <TabsContent value="users">
+              <UserAdmin />
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
     </div>

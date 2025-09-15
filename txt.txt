@@ -1,0 +1,259 @@
+import { usePointSaleGetAll } from "@/hooks/pointSale/usePointSaleGetAll";
+import React, { useState } from "react";
+
+interface PointSaleStock {
+  id: number;
+  name: string;
+  stock: number;
+}
+
+interface FormMovementStockProps {
+  productId: number;
+  stockDeposit: number;
+  pointSalesStock: PointSaleStock[];
+}
+
+const FormMovementStock: React.FC<FormMovementStockProps> = ({
+  productId,
+  stockDeposit,
+  pointSalesStock,
+}) => {
+  // Hook para obtener todos los puntos de venta
+  const { pointSales, isLoading } = usePointSaleGetAll();
+
+  // Estado para Depósito → Puntos de Venta
+  const [selectedPoints, setSelectedPoints] = useState<number[]>([]);
+  const [depositAmount, setDepositAmount] = useState<number>(0);
+  const [ignoreStockDeposit, setIgnoreStockDeposit] = useState<boolean>(false);
+
+  // Estado para Punto de Venta → Punto de Venta o Depósito
+  const [fromPointId, setFromPointId] = useState<number | "">("");
+  const [toPointId, setToPointId] = useState<number | "">("");
+  const [moveAmount, setMoveAmount] = useState<number>(0);
+  const [ignoreStockPoints, setIgnoreStockPoints] = useState<boolean>(false);
+
+  // Manejar selección múltiple de puntos de venta (Depósito → Puntos)
+  const togglePointSelection = (id: number) => {
+    setSelectedPoints((prev) =>
+      prev.includes(id) ? prev.filter((pid) => pid !== id) : [...prev, id]
+    );
+  };
+
+  /**
+   * Validar y mover stock desde Depósito → varios Puntos de Venta
+   */
+  const handleMoveFromDeposit = () => {
+    if (depositAmount <= 0) {
+      alert("La cantidad debe ser mayor a 0.");
+      return;
+    }
+
+    if (depositAmount > stockDeposit) {
+      alert("No puedes mover más stock del disponible en el depósito.");
+      return;
+    }
+
+    if (selectedPoints.length === 0) {
+      alert("Debes seleccionar al menos un punto de venta destino.");
+      return;
+    }
+
+    const payload = {
+      amount: depositAmount,
+      from_id: 0,
+      from_type: "deposit",
+      ignore_stock: ignoreStockDeposit,
+      product_id: productId,
+      to_id: selectedPoints,
+      to_type: "point_sale",
+    };
+
+    console.log("Payload Depósito → Puntos de Venta", payload);
+  };
+
+  /**
+   * Validar y mover stock desde Punto de Venta → Punto de Venta o Depósito
+   */
+  const handleMoveBetweenPoints = () => {
+    // Validar ORIGEN
+    if (fromPointId === "" || fromPointId === null) {
+      alert("Debes seleccionar un punto de venta de origen.");
+      return;
+    }
+
+    // Validar DESTINO (permitiendo depósito = 0 como válido)
+    if (toPointId === "" || toPointId === null || toPointId === undefined) {
+      alert("Debes seleccionar un destino (depósito o punto de venta).");
+      return;
+    }
+
+    // Origen y destino no pueden ser iguales
+    if (fromPointId === toPointId) {
+      alert("El origen y destino no pueden ser el mismo.");
+      return;
+    }
+
+    const fromStock = pointSalesStock.find((p) => p.id === fromPointId)?.stock ?? 0;
+
+    if (moveAmount <= 0) {
+      alert("La cantidad debe ser mayor a 0.");
+      return;
+    }
+
+    if (moveAmount > fromStock) {
+      alert("No puedes mover más stock del disponible en el punto de venta de origen.");
+      return;
+    }
+
+    const payload = {
+      amount: moveAmount,
+      from_id: fromPointId,
+      from_type: "point_sale",
+      ignore_stock: ignoreStockPoints,
+      product_id: productId,
+      to_id: toPointId,
+      to_type: toPointId === 0 ? "deposit" : "point_sale",
+    };
+
+    console.log("Payload Punto de Venta → Otro", payload);
+  };
+
+  return (
+    <div className="space-y-8">
+      <h2 className="text-xl font-bold text-white mb-4">Mover Stock</h2>
+
+      {/* --- Depósito → Puntos de Venta --- */}
+      <div className="p-4 rounded-lg bg-slate-700 space-y-4">
+        <h3 className="text-lg font-semibold text-white">
+          Mover desde Depósito a Puntos de Venta
+        </h3>
+        <p className="text-slate-300 text-sm">
+          Stock disponible en depósito:{" "}
+          <span className="font-bold text-emerald-400">{stockDeposit}</span>
+        </p>
+
+        {isLoading ? (
+          <p className="text-slate-400">Cargando puntos de venta...</p>
+        ) : (
+          <div className="space-y-2">
+            {pointSales.map((ps) => (
+              <label
+                key={ps.id}
+                className="flex items-center gap-2 text-slate-300 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedPoints.includes(ps.id)}
+                  onChange={() => togglePointSelection(ps.id)}
+                  className="accent-indigo-500"
+                />
+                {ps.name}
+              </label>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-4 space-y-2">
+          <label className="block text-sm text-slate-400">Cantidad a mover</label>
+          <input
+            type="number"
+            value={depositAmount}
+            onChange={(e) => setDepositAmount(Number(e.target.value))}
+            className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white"
+          />
+        </div>
+
+        {/* Checkbox ignore_stock */}
+        <label className="flex items-center gap-2 text-slate-300 mt-2">
+          <input
+            type="checkbox"
+            checked={ignoreStockDeposit}
+            onChange={(e) => setIgnoreStockDeposit(e.target.checked)}
+            className="accent-indigo-500"
+          />
+          Ignorar stock (lo maneja backend)
+        </label>
+
+        <button
+          onClick={handleMoveFromDeposit}
+          className="mt-4 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white"
+        >
+          Mover desde depósito
+        </button>
+      </div>
+
+      {/* --- Punto de Venta → Punto de Venta o Depósito --- */}
+      <div className="p-4 rounded-lg bg-slate-700 space-y-4">
+        <h3 className="text-lg font-semibold text-white">
+          Mover entre Puntos de Venta o hacia Depósito
+        </h3>
+
+        {/* Origen */}
+        <div>
+          <label className="block text-sm text-slate-400">Punto de venta origen</label>
+          <select
+            value={fromPointId}
+            onChange={(e) => setFromPointId(Number(e.target.value))}
+            className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white"
+          >
+            <option value="">Seleccionar origen</option>
+            {pointSalesStock.map((ps) => (
+              <option key={ps.id} value={ps.id}>
+                {ps.name} (Stock: {ps.stock})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Destino */}
+        <div>
+          <label className="block text-sm text-slate-400">Destino</label>
+          <select
+            value={toPointId}
+            onChange={(e) => setToPointId(Number(e.target.value))}
+            className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white"
+          >
+            <option value="">Seleccionar destino</option>
+            <option value={0}>Depósito</option>
+            {pointSales.map((ps) => (
+              <option key={ps.id} value={ps.id}>
+                {ps.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Cantidad */}
+        <div>
+          <label className="block text-sm text-slate-400">Cantidad a mover</label>
+          <input
+            type="number"
+            value={moveAmount}
+            onChange={(e) => setMoveAmount(Number(e.target.value))}
+            className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 text-white"
+          />
+        </div>
+
+        {/* Checkbox ignore_stock */}
+        <label className="flex items-center gap-2 text-slate-300 mt-2">
+          <input
+            type="checkbox"
+            checked={ignoreStockPoints}
+            onChange={(e) => setIgnoreStockPoints(e.target.checked)}
+            className="accent-indigo-500"
+          />
+          Ignorar stock (lo maneja backend)
+        </label>
+
+        <button
+          onClick={handleMoveBetweenPoints}
+          className="mt-4 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white"
+        >
+          Mover entre puntos
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default FormMovementStock;
