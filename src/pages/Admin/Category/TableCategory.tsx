@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   createColumnHelper,
   getCoreRowModel,
@@ -22,7 +22,12 @@ import {
   ChevronRight,
   ArrowUpDown,
 } from "lucide-react";
-import { useGetAllCategories, type Category } from "@/hooks/admin/Category/useGetAllCategories";
+import {
+  useGetAllCategories,
+  type Category,
+} from "@/hooks/admin/Category/useGetAllCategories";
+import Modal from "@/components/generic/Modal";
+import EditDeleteCategory from "./EditDeleteCategory";
 
 const TableCategories = () => {
   const [pagination, setPagination] = useState({
@@ -33,13 +38,22 @@ const TableCategories = () => {
   const [globalFilter, setGlobalFilter] = useState("");
   const [sorting, setSorting] = useState<SortingState>([]);
 
+  // Para el Modal
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
+    null
+  );
+
   // Llamada a la API
   const { categories, isLoading } = useGetAllCategories();
 
   const columnHelper = createColumnHelper<Category>();
 
   // � Filtro personalizado para búsqueda por nombre
-  const customGlobalFilter: FilterFn<Category> = (row, columnId, filterValue) => {
+  const customGlobalFilter: FilterFn<Category> = (
+    row,
+    filterValue
+  ) => {
     const search = filterValue.toLowerCase();
     const categoryName = row.original.name.toLowerCase();
     return categoryName.includes(search);
@@ -75,7 +89,10 @@ const TableCategories = () => {
       header: "Acciones",
       cell: (info) => (
         <button
-          onClick={() => alert(`Categoría ID: ${info.row.original.id}`)}
+          onClick={() => {
+            setSelectedCategoryId(info.row.original.id);
+            setIsEditModalOpen(true);
+          }}
           className="p-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition"
         >
           <Eye className="w-4 h-4" />
@@ -108,7 +125,9 @@ const TableCategories = () => {
   // Loader
   if (isLoading) {
     return (
-      <div className="p-6 text-slate-400 text-center">Cargando categorías...</div>
+      <div className="p-6 text-slate-400 text-center">
+        Cargando categorías...
+      </div>
     );
   }
 
@@ -141,7 +160,10 @@ const TableCategories = () => {
                     >
                       {header.isPlaceholder
                         ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
                     </th>
                   ))}
                 </tr>
@@ -150,13 +172,19 @@ const TableCategories = () => {
             <tbody className="divide-y divide-white/10">
               {table.getFilteredRowModel().rows.length > 0 ? (
                 table.getRowModel().rows.map((row) => (
-                  <tr key={row.id} className="hover:bg-white/5 transition-colors">
+                  <tr
+                    key={row.id}
+                    className="hover:bg-white/5 transition-colors"
+                  >
                     {row.getVisibleCells().map((cell) => (
                       <td
                         key={cell.id}
                         className="px-6 py-4 whitespace-nowrap text-sm text-slate-300 align-top"
                       >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
                       </td>
                     ))}
                   </tr>
@@ -232,6 +260,23 @@ const TableCategories = () => {
           </select>
         </div>
       </div>
+
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedCategoryId(null);
+        }}
+        title="Editar Categoría"
+        size="md"
+      >
+        {selectedCategoryId && (
+          <EditDeleteCategory
+            id={selectedCategoryId}
+            onClose={() => setIsEditModalOpen(false)}
+          />
+        )}
+      </Modal>
     </div>
   );
 };

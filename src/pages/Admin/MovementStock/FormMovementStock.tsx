@@ -44,7 +44,7 @@ const FormMovementStock: React.FC<FormMovementStockProps> = ({ productId }) => {
       return response.data;
     },
     onSuccess: async () => {
-      await invalidateQueries(["getAllProducts", "ProductGetById","searchProductsByName","searchProductsByCode"]);
+      await invalidateQueries(["getAllProducts", "ProductGetById","searchProductsByName","searchProductsByCode","ProductsGetByCategory","getAllMovements"]);
       alert("Movimiento realizado con éxito ✅");
 
       // Resetear todos los estados

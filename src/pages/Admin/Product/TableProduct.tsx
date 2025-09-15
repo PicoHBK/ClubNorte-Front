@@ -27,6 +27,8 @@ import {
   Search,
   Barcode,
 } from "lucide-react";
+import Modal from "@/components/generic/Modal";
+import EditDeleteProduct from "./EditDeleteProduct";
 
 const TableProduct = () => {
   /**
@@ -41,7 +43,15 @@ const TableProduct = () => {
   /**
    * Estado para categoría seleccionada
    */
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
+    null
+  );
+
+  // Para el Modal
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(
+    null
+  );
 
   /**
    * Paginación
@@ -102,7 +112,8 @@ const TableProduct = () => {
   const isSearchingByCode = debouncedSearchCode.trim().length > 0;
   const isFilteringByCategory = !!selectedCategoryId;
 
-  const isSearching = isSearchingByName || isSearchingByCode || isFilteringByCategory;
+  const isSearching =
+    isSearchingByName || isSearchingByCode || isFilteringByCategory;
 
   const tableData = isFilteringByCategory
     ? productsByCategory
@@ -195,7 +206,10 @@ const TableProduct = () => {
       header: "Acciones",
       cell: (info) => (
         <button
-          onClick={() => alert(`Producto ID: ${info.row.original.id}`)}
+          onClick={() => {
+            setSelectedProductId(info.row.original.id);
+            setIsEditModalOpen(true);
+          }}
           className="p-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition"
         >
           <Eye className="w-4 h-4" />
@@ -276,33 +290,38 @@ const TableProduct = () => {
 
           {/* Filtro por categoría */}
           {/* Filtro por categoría */}
-<div>
-  <select
-    value={selectedCategoryId ?? ""}
-    onChange={(e) => {
-      const value = e.target.value;
-      setSelectedCategoryId(value ? Number(value) : null);
-      setSearchName("");
-      setSearchCode("");
-    }}
-    disabled={searchName.trim().length > 0 || searchCode.trim().length > 0} // <-- se desactiva cuando hay búsqueda
-    className={`w-full bg-slate-900 border border-slate-800 text-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500
-      ${searchName.trim().length > 0 || searchCode.trim().length > 0 ? "opacity-50 cursor-not-allowed" : ""}
+          <div>
+            <select
+              value={selectedCategoryId ?? ""}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSelectedCategoryId(value ? Number(value) : null);
+                setSearchName("");
+                setSearchCode("");
+              }}
+              disabled={
+                searchName.trim().length > 0 || searchCode.trim().length > 0
+              } // <-- se desactiva cuando hay búsqueda
+              className={`w-full bg-slate-900 border border-slate-800 text-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500
+      ${
+        searchName.trim().length > 0 || searchCode.trim().length > 0
+          ? "opacity-50 cursor-not-allowed"
+          : ""
+      }
     `}
-  >
-    <option value="">Filtrar por categoría</option>
-    {isLoadingCategories ? (
-      <option disabled>Cargando categorías...</option>
-    ) : (
-      categories.map((cat) => (
-        <option key={cat.id} value={cat.id}>
-          {cat.name}
-        </option>
-      ))
-    )}
-  </select>
-</div>
-
+            >
+              <option value="">Filtrar por categoría</option>
+              {isLoadingCategories ? (
+                <option disabled>Cargando categorías...</option>
+              ) : (
+                categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
         </div>
 
         {/* Tabla */}
@@ -329,7 +348,10 @@ const TableProduct = () => {
                       >
                         {header.isPlaceholder
                           ? null
-                          : flexRender(header.column.columnDef.header, header.getContext())}
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
                       </th>
                     ))}
                   </tr>
@@ -338,13 +360,19 @@ const TableProduct = () => {
               <tbody className="divide-y divide-white/10">
                 {tableData.length > 0 ? (
                   table.getRowModel().rows.map((row) => (
-                    <tr key={row.id} className="hover:bg-white/5 transition-colors">
+                    <tr
+                      key={row.id}
+                      className="hover:bg-white/5 transition-colors"
+                    >
                       {row.getVisibleCells().map((cell) => (
                         <td
                           key={cell.id}
                           className="px-6 py-4 whitespace-nowrap text-sm text-slate-300 align-top"
                         >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
                         </td>
                       ))}
                     </tr>
@@ -420,6 +448,23 @@ const TableProduct = () => {
           </div>
         )}
       </div>
+
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedProductId(null); // Arreglar aquí también
+        }}
+        title="Editar Producto" // Cambiar título también
+        size="md"
+      >
+        {selectedProductId && ( // Cambiar la condición
+          <EditDeleteProduct
+            id={selectedProductId} // Ahora no será null
+            onClose={() => setIsEditModalOpen(false)}
+          />
+        )}
+      </Modal>
     </div>
   );
 };

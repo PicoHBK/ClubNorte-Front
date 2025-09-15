@@ -11,6 +11,8 @@ const Admin = () => {
   const isLoading = useUserStore((state) => state.isLoading)
   const user = useUserStore((state) => state.user)
   const getUserFullName = useUserStore((state) => state.getUserFullName)
+  const role = useUserStore((state) => state.getUserRole())
+  const isAdmin = useUserStore((state) => state.isUserAdmin())
   const userPointSales = useUserStore((state) => state.getPointSales()) // ✅ puntos de venta del usuario
 
   // Si está cargando, mostrar loading
@@ -84,32 +86,59 @@ const Admin = () => {
         </div>
 
         {/* Sección con Tabs */}
-        <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 p-8">
-          <Tabs defaultValue="productos" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 bg-white/5 rounded-xl mb-6">
-              <TabsTrigger value="productos" className="text-white data-[state=active]:bg-white/20 rounded-xl">Productos</TabsTrigger>
-              <TabsTrigger value="categorias" className="text-white data-[state=active]:bg-white/20 rounded-xl">Categorías</TabsTrigger>
-              <TabsTrigger value="reponer" className="text-white data-[state=active]:bg-white/20 rounded-xl">Reponer</TabsTrigger>
-              <TabsTrigger value="users" className="text-white data-[state=active]:bg-white/20 rounded-xl">Usuarios</TabsTrigger>
-            </TabsList>
+        {/* Sección con Tabs */}
+{(isAdmin || role === "admin" || role === "repositor") && (
+  <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 p-8">
+    <Tabs defaultValue="productos" className="w-full">
+      <TabsList className="grid w-full grid-cols-4 bg-white/5 rounded-xl mb-6">
+        {/* solo admins */}
+        {(isAdmin || role === "admin") && (
+          <>
+            <TabsTrigger value="productos" className="text-white data-[state=active]:bg-white/20 rounded-xl">
+              Productos
+            </TabsTrigger>
+            <TabsTrigger value="categorias" className="text-white data-[state=active]:bg-white/20 rounded-xl">
+              Categorías
+            </TabsTrigger>
+            <TabsTrigger value="users" className="text-white data-[state=active]:bg-white/20 rounded-xl">
+              Usuarios
+            </TabsTrigger>
+          </>
+        )}
 
-            <TabsContent value="productos">
-              <ProductAdmin />
-            </TabsContent>
+        {/* admins y repositores */}
+        {(isAdmin || role === "admin" || role === "repositor") && (
+          <TabsTrigger value="reponer" className="text-white data-[state=active]:bg-white/20 rounded-xl">
+            Reponer
+          </TabsTrigger>
+        )}
+      </TabsList>
 
-            <TabsContent value="categorias">
-              <CategoryAdmin />
-            </TabsContent>
+      {/* solo admins */}
+      {(isAdmin || role === "admin") && (
+        <>
+          <TabsContent value="productos">
+            <ProductAdmin />
+          </TabsContent>
+          <TabsContent value="categorias">
+            <CategoryAdmin />
+          </TabsContent>
+          <TabsContent value="users">
+            <UserAdmin />
+          </TabsContent>
+        </>
+      )}
 
-            <TabsContent value="reponer">
-              <MovementStockAdmin />
-            </TabsContent>
+      {/* admins y repositores */}
+      {(isAdmin || role === "admin" || role === "repositor") && (
+        <TabsContent value="reponer">
+          <MovementStockAdmin />
+        </TabsContent>
+      )}
+    </Tabs>
+  </div>
+)}
 
-            <TabsContent value="users">
-              <UserAdmin />
-            </TabsContent>
-          </Tabs>
-        </div>
       </main>
     </div>
   )

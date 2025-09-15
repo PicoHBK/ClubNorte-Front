@@ -12,6 +12,8 @@ import {
 
 import { Eye, Search, ArrowUpDown } from "lucide-react"
 import { useGetAllUsers, type User } from "@/hooks/admin/users/useGetAllUsers"
+import Modal from "@/components/generic/Modal"
+import EditDeleteUser from "./EditDeleteUser"
 
 const TableUsers = () => {
   const [globalFilter, setGlobalFilter] = useState("")
@@ -19,6 +21,10 @@ const TableUsers = () => {
 
   // Llamamos a la API
   const { users, isLoading } = useGetAllUsers()
+
+  // Para el Modal de Usuario
+const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
   const columnHelper = createColumnHelper<User>()
 
@@ -91,7 +97,10 @@ const TableUsers = () => {
       header: "Acciones",
       cell: info => (
         <button
-          onClick={() => alert(`Ver detalles del usuario ${info.row.original.id}`)}
+          onClick={() => {
+            setSelectedUserId(info.row.original.id);
+            setIsEditModalOpen(true);
+          }}
           className="p-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition"
         >
           <Eye className="w-4 h-4" />
@@ -188,6 +197,23 @@ const TableUsers = () => {
           </table>
         </div>
       </div>
+
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedUserId(null); // Arreglar aquí también
+        }}
+        title="Editar Producto" // Cambiar título también
+        size="md"
+      >
+        {selectedUserId && ( // Cambiar la condición
+          <EditDeleteUser
+            id={selectedUserId} // Ahora no será null
+            onClose={() => setIsEditModalOpen(false)}
+          />
+        )}
+      </Modal>
     </div>
   )
 }

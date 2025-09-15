@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   createColumnHelper,
-  useReactTable,
   getCoreRowModel,
   getFilteredRowModel,
   getSortedRowModel,
-  type SortingState,
+  useReactTable,
   flexRender,
+  type SortingState,
 } from "@tanstack/react-table";
 import {
   Search,
@@ -21,8 +21,11 @@ import {
 import { useGetAllProducts } from "@/hooks/admin/Product/useGetAllProducts";
 import { useSearchProductsByName } from "@/hooks/admin/Product/useSearchProductsByName";
 import { useSearchProductsByCode } from "@/hooks/admin/Product/useSearchProductsByCode";
+import { useGetProductsByCategory } from "@/hooks/admin/Product/useGetProductsByCategory";
+import { useGetAllCategories } from "@/hooks/admin/Category/useGetAllCategories";
 import type { Product } from "@/hooks/admin/Product/useGetAllProducts";
-import FormMovementStock from "./FromMovementStock";
+
+import FormMovementStock from "./FormMovementStock";
 
 const TableReponerStock = () => {
   // Estados para búsqueda
@@ -31,6 +34,9 @@ const TableReponerStock = () => {
 
   const [searchCode, setSearchCode] = useState("");
   const [debouncedSearchCode, setDebouncedSearchCode] = useState("");
+
+  // Estado para categoría
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
 
   // Estado para modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -64,6 +70,8 @@ const TableReponerStock = () => {
   /**
    * Hooks para datos
    */
+  const { categories, isLoading: isLoadingCategories } = useGetAllCategories();
+
   const { productsData, isLoading: isLoadingAll } = useGetAllProducts(
     pagination.pageIndex + 1,
     pagination.pageSize
@@ -75,20 +83,28 @@ const TableReponerStock = () => {
   const { products: searchedByCode, isLoading: isLoadingCode } =
     useSearchProductsByCode(debouncedSearchCode);
 
+  const { products: productsByCategory, isLoading: isLoadingCategory } =
+    useGetProductsByCategory(selectedCategoryId);
+
   /**
    * Determinar estado de búsqueda y datos a mostrar
    */
   const isSearchingByName = debouncedSearchName.trim().length > 0;
   const isSearchingByCode = debouncedSearchCode.trim().length > 0;
-  const isSearching = isSearchingByName || isSearchingByCode;
+  const isFilteringByCategory = !!selectedCategoryId;
+  const isSearching = isSearchingByName || isSearchingByCode || isFilteringByCategory;
 
-  const tableData = isSearchingByName
+  const tableData = isFilteringByCategory
+    ? productsByCategory
+    : isSearchingByName
     ? searchedByName
     : isSearchingByCode
     ? searchedByCode
     : productsData?.products || [];
 
-  const isLoading = isSearchingByName
+  const isLoading = isFilteringByCategory
+    ? isLoadingCategory
+    : isSearchingByName
     ? isLoadingName
     : isSearchingByCode
     ? isLoadingCode
@@ -200,8 +216,8 @@ const TableReponerStock = () => {
   return (
     <div className="flex flex-col items-center w-full p-6 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 min-h-screen">
       <div className="w-full max-w-6xl space-y-4">
-        {/* Inputs de búsqueda */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Inputs de búsqueda y categoría */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Buscar por nombre */}
           <div className="relative">
             <Search className="absolute left-3 top-2.5 w-5 h-5 text-slate-400" />
@@ -213,11 +229,14 @@ const TableReponerStock = () => {
                 setSearchName(e.target.value);
                 if (e.target.value.trim()) {
                   setSearchCode("");
+                  setSelectedCategoryId(null);
                 }
               }}
-              disabled={searchCode.trim().length > 0}
+              disabled={searchCode.trim().length > 0 || isFilteringByCategory}
               className={`w-full pl-10 pr-4 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none ${
-                searchCode.trim().length > 0 ? "opacity-50 cursor-not-allowed" : ""
+                searchCode.trim().length > 0 || isFilteringByCategory
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
               }`}
             />
           </div>
@@ -233,13 +252,46 @@ const TableReponerStock = () => {
                 setSearchCode(e.target.value);
                 if (e.target.value.trim()) {
                   setSearchName("");
+                  setSelectedCategoryId(null);
                 }
               }}
-              disabled={searchName.trim().length > 0}
+              disabled={searchName.trim().length > 0 || isFilteringByCategory}
               className={`w-full pl-10 pr-4 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none ${
-                searchName.trim().length > 0 ? "opacity-50 cursor-not-allowed" : ""
+                searchName.trim().length > 0 || isFilteringByCategory
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
               }`}
             />
+          </div>
+
+          {/* Filtro por categoría */}
+          <div>
+            <select
+              value={selectedCategoryId ?? ""}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSelectedCategoryId(value ? Number(value) : null);
+                setSearchName("");
+                setSearchCode("");
+              }}
+              disabled={searchName.trim().length > 0 || searchCode.trim().length > 0}
+              className={`w-full bg-slate-900 border border-slate-800 text-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 ${
+                searchName.trim().length > 0 || searchCode.trim().length > 0
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
+              }`}
+            >
+              <option value="">Filtrar por categoría</option>
+              {isLoadingCategories ? (
+                <option disabled>Cargando categorías...</option>
+              ) : (
+                categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))
+              )}
+            </select>
           </div>
         </div>
 
@@ -247,7 +299,9 @@ const TableReponerStock = () => {
         <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-lg">
           {isLoading ? (
             <div className="p-6 text-slate-400 text-center">
-              {isSearchingByName
+              {isFilteringByCategory
+                ? "Cargando productos por categoría..."
+                : isSearchingByName
                 ? "Buscando productos por nombre..."
                 : isSearchingByCode
                 ? "Buscando productos por código..."
@@ -314,7 +368,6 @@ const TableReponerStock = () => {
               >
                 <ChevronsLeft className="w-5 h-5" />
               </button>
-
               <button
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
@@ -337,7 +390,6 @@ const TableReponerStock = () => {
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
-
               <button
                 onClick={() => table.setPageIndex((productsData?.total_pages || 1) - 1)}
                 disabled={!table.getCanNextPage()}
@@ -373,7 +425,6 @@ const TableReponerStock = () => {
               ✕
             </button>
 
-            {/* Formulario de movimiento de stock */}
             <FormMovementStock productId={selectedProduct.id} />
           </div>
         </div>
