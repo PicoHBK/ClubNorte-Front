@@ -4,6 +4,7 @@ import { useGetProductById } from '@/hooks/admin/Product/useGetProductById';
 import { useProductMutations } from '@/hooks/admin/Product/useProductMutations';
 import { useGetAllCategories } from '@/hooks/admin/Category/useGetAllCategories';
 import { getApiError } from '@/utils/apiError';
+import SuccessMessage from '@/components/generic/SuccessMessage';
 
 interface ProductFormData {
   category_id: number;
@@ -86,75 +87,39 @@ const EditDeleteProduct: React.FC<EditDeleteProductProps> = ({ id, onClose }) =>
   // Pantalla de éxito para actualización
   if (isUpdated) {
     return (
-      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
-        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl p-6 w-full max-w-md mx-auto">
-          <div className="text-center">
-            <div className="mb-4">
-              <div className="w-16 h-16 mx-auto bg-green-500/20 rounded-full flex items-center justify-center mb-4">
-                <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h2 className="text-xl font-bold text-white mb-2">¡Producto Actualizado!</h2>
-              <p className="text-slate-300 text-sm">
-                El producto ha sido actualizado exitosamente
-              </p>
-            </div>
-            
-            <div className="flex space-x-3">
-              <button
-                onClick={() => resetUpdateState()}
-                className="flex-1 bg-slate-600 hover:bg-slate-500 text-white font-medium py-2 rounded-md text-sm transition"
-              >
-                Editar de nuevo
-              </button>
-              {onClose && (
-                <button
-                  onClick={onClose}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 rounded-md text-sm transition"
-                >
-                  Volver
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      <SuccessMessage
+        title="¡Producto Actualizado!"
+        description="El producto ha sido actualizado exitosamente"
+        primaryButton={{
+          text: "Editar de nuevo",
+          onClick: () => resetUpdateState(),
+          variant: "slate"
+        }}
+        secondaryButton={onClose ? {
+          text: "Volver",
+          onClick: onClose,
+          variant: "indigo"
+        } : undefined}
+      />
     );
   }
 
   // Si el producto fue eliminado exitosamente
   if (isDeleted) {
     return (
-      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
-        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl p-6 w-full max-w-md mx-auto">
-          <div className="text-center">
-            <div className="mb-4">
-              <div className="w-16 h-16 mx-auto bg-green-500/20 rounded-full flex items-center justify-center mb-4">
-                <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h2 className="text-xl font-bold text-white mb-2">¡Producto Eliminado!</h2>
-              <p className="text-slate-300 text-sm">
-                El producto ha sido eliminado exitosamente
-              </p>
-            </div>
-            
-            {onClose && (
-              <button
-                onClick={onClose}
-                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 rounded-md text-sm transition"
-              >
-                Volver
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+      <SuccessMessage
+        title="¡Producto Eliminado!"
+        description="El producto ha sido eliminado exitosamente"
+        primaryButton={onClose ? {
+          text: "Volver",
+          onClick: onClose,
+          variant: "indigo"
+        } : undefined}
+      />
     );
   }
 
+  // El resto del componente permanece igual...
   if (isLoadingProduct || isLoadingCategories) {
     return (
       <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">

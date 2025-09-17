@@ -2,29 +2,8 @@
 import apiClubNorte from "@/api/apiClubNorte";
 import { useQuery } from "@tanstack/react-query";
 import { getApiError } from "@/utils/apiError";
+import type { UserDetail } from "./userType";
 
-export interface Role {
-  id: number;
-  name: string;
-}
-
-export interface PointSale {
-  id: number;
-  name: string;
-}
-
-export interface UserDetail {
-  id: number;
-  first_name: string;
-  last_name: string;
-  address: string;
-  cellphone: string;
-  email: string;
-  username: string;
-  is_admin: boolean;
-  role: Role;
-  point_sales: PointSale[];
-}
 
 export interface ApiSuccessResponse<T> {
   status: boolean;

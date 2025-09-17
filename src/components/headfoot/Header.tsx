@@ -1,5 +1,13 @@
-import { LogOut, User, Loader2 } from 'lucide-react'
+import { LogOut, User, Loader2, Settings } from 'lucide-react'
 import { useNavigate, useLocation } from "react-router-dom"
+import { Button } from "@/components/ui/button"
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu"
 import useUserStore from '@/store/useUserStore'
 
 const Header = () => {
@@ -7,28 +15,23 @@ const Header = () => {
   const location = useLocation()
   
   // Estados del store
-  const logout = useUserStore((state) => state.logout)
-  const isLoading = useUserStore((state) => state.isLoading)
-  const user = useUserStore((state) => state.user)
-  const getUserFullName = useUserStore((state) => state.getUserFullName)
+  const { logout, isLoading, user, getUserFullName } = useUserStore()
   
   // Si está en "/" (login), no mostrar el header
-  if (location.pathname === "/") {
-    return null
-  }
+  if (location.pathname === "/") return null
   
   const handleLogout = async () => {
     try {
       await logout()
-      // El logout del store ya maneja la limpieza del estado
-      // Redirigir al login después del logout
       navigate("/")
     } catch (error) {
       console.error("Error en logout:", error)
-      // El store ya maneja los errores, pero aún redirigimos
-      // porque el estado local se limpió
       navigate("/")
     }
+  }
+
+  const handleChangePassword = () => {
+    navigate("/change-password")
   }
 
   return (
@@ -48,24 +51,43 @@ const Header = () => {
             </div>
           </div>
           
-          {/* Botón Logout */}
-          <button
-            onClick={handleLogout}
-            disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="animate-spin" size={18} />
-                Cerrando...
-              </>
-            ) : (
-              <>
-                <LogOut size={18} />
-                Cerrar Sesión
-              </>
-            )}
-          </button>
+          {/* Menú de Usuario */}
+          <div className="flex items-center gap-3">
+            {/* Dropdown de Configuración */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="bg-slate-700 border-slate-500 hover:bg-slate-600 text-white"
+                >
+                  <Settings size={18} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56 bg-slate-800 border-slate-600">
+                <DropdownMenuItem 
+                  onClick={handleChangePassword}
+                  className="text-slate-200 hover:bg-slate-700 cursor-pointer"
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  Cambiar Contraseña
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-slate-600" />
+                <DropdownMenuItem 
+                  onClick={handleLogout}
+                  disabled={isLoading}
+                  className="text-red-400 hover:bg-slate-700 cursor-pointer"
+                >
+                  {isLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <LogOut className="mr-2 h-4 w-4" />
+                  )}
+                  {isLoading ? "Cerrando..." : "Cerrar Sesión"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
     </header>

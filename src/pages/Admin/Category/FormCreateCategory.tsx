@@ -1,14 +1,12 @@
 import apiClubNorte from "@/api/apiClubNorte";
+import type { CategoryCreateData } from "@/hooks/admin/Category/categoryType";
 import { getApiError } from "@/utils/apiError";
 import useInvalidateQueries from "@/utils/useInvalidateQueries";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from 'react-hook-form';
 
-interface CategoryFormData {
-  name: string;
-}
 
-const postCategory = async (formData: CategoryFormData) => {
+const postCategory = async (formData: CategoryCreateData) => {
   const { data } = await apiClubNorte.post(
     "/api/v1/category/create", // ajusta la URL según tu API
     formData,
@@ -23,7 +21,7 @@ const FormCreateCategory = () => {
     handleSubmit,
     formState: { errors },
     reset
-  } = useForm<CategoryFormData>();
+  } = useForm<CategoryCreateData>();
 
   const invalidateQueries = useInvalidateQueries();
 
@@ -44,7 +42,7 @@ const FormCreateCategory = () => {
     },
   });
 
-  const onSubmit = (data: CategoryFormData) => {
+  const onSubmit = (data: CategoryCreateData) => {
     mutate(data);
   };
 

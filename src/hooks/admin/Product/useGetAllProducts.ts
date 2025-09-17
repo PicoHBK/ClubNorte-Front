@@ -1,33 +1,8 @@
 import apiClubNorte from "@/api/apiClubNorte";
 import { useQuery } from "@tanstack/react-query";
 import { getApiError } from "@/utils/apiError";
+import type { Product } from "./productType";
 
-export interface Category {
-  id: number;
-  name: string;
-}
-
-export interface StockPoint {
-  id: number;
-  name: string;
-  stock: number;
-}
-
-export interface DepositStock {
-  id: number;
-  stock: number;
-}
-
-export interface Product {
-  id: number;
-  code: string;
-  name: string;
-  description: string;
-  category: Category;
-  price: number;
-  stock_point_sales: StockPoint[] | null;
-  stock_deposit: DepositStock;
-}
 
 export interface ProductsResponse {
   limit: number;

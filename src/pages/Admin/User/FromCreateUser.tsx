@@ -1,5 +1,6 @@
 import apiClubNorte from "@/api/apiClubNorte";
 import { useGetAllRoles } from "@/hooks/admin/Rol/useGetAllRoles";
+import type { UserCreateData } from "@/hooks/admin/users/userType";
 import { usePointSaleGetAll } from "@/hooks/pointSale/usePointSaleGetAll";
 import { getApiError } from "@/utils/apiError";
 import useInvalidateQueries from "@/utils/useInvalidateQueries";
@@ -7,19 +8,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 
 
-interface UserFormData {
-  address: string;
-  cellphone: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  password: string;
-  point_sales_ids: number[];
-  role_id: number;
-  username: string;
-}
-
-const postUser = async (formData: UserFormData) => {
+const postUser = async (formData: UserCreateData) => {
   const { data } = await apiClubNorte.post(
     "/api/v1/user/create",
     formData,
@@ -34,7 +23,7 @@ const FormCreateUser = () => {
     handleSubmit,
     formState: { errors },
     reset
-  } = useForm<UserFormData>();
+  } = useForm<UserCreateData>();
 
   const invalidateQueries = useInvalidateQueries();
 
@@ -58,9 +47,9 @@ const FormCreateUser = () => {
     },
   });
 
-  const onSubmit = (data: UserFormData) => {
+  const onSubmit = (data: UserCreateData) => {
   // Adaptamos point_sales_ids a number[]
-  const payload: UserFormData = {
+  const payload: UserCreateData = {
     ...data,
     point_sales_ids: data.point_sales_ids.map(Number),
   };

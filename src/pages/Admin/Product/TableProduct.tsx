@@ -14,7 +14,6 @@ import { useSearchProductsByCode } from "@/hooks/admin/Product/useSearchProducts
 import { useGetProductsByCategory } from "@/hooks/admin/Product/useGetProductsByCategory";
 import { useGetAllCategories } from "@/hooks/admin/Category/useGetAllCategories";
 
-import type { Product } from "@/hooks/admin/Product/useGetAllProducts";
 
 // Íconos
 import {
@@ -29,6 +28,7 @@ import {
 } from "lucide-react";
 import Modal from "@/components/generic/Modal";
 import EditDeleteProduct from "./EditDeleteProduct";
+import type { Product } from "@/hooks/admin/Product/productType";
 
 const TableProduct = () => {
   /**

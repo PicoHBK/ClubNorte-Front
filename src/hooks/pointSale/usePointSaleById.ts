@@ -1,12 +1,8 @@
 import apiClubNorte from "@/api/apiClubNorte"
 import { useQuery } from "@tanstack/react-query"
 import { getApiError } from "@/utils/apiError"
+import type { PointSale } from "./poinSaleType"
 
-export interface PointSale {
-  id: number
-  name: string
-  description: string
-}
 
 export interface ApiSuccessResponseById {
   status: boolean

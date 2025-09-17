@@ -2,12 +2,19 @@
 import apiClubNorte from "@/api/apiClubNorte";
 import { useQuery } from "@tanstack/react-query";
 import { getApiError } from "@/utils/apiError";
-import type { Product, ApiSuccessResponse } from "./useGetAllProducts";
+import type { Product } from "./productType";
+
+// Nuevo tipo para respuesta de producto único
+interface ApiSuccessResponseSingle<T> {
+  status: boolean;
+  body: T;
+  message: string;
+}
 
 /**
  * Llamada a la API para buscar productos por código
  */
-const searchProductsByCode = async (code: string): Promise<ApiSuccessResponse<Product[]>> => {
+const searchProductsByCode = async (code: string): Promise<ApiSuccessResponseSingle<Product[]>> => {
   if (!code.trim()) {
     return {
       status: true,
@@ -16,12 +23,18 @@ const searchProductsByCode = async (code: string): Promise<ApiSuccessResponse<Pr
     };
   }
 
-  const response = await apiClubNorte.get<ApiSuccessResponse<Product[]>>(
+  // La API retorna un solo producto
+  const response = await apiClubNorte.get<ApiSuccessResponseSingle<Product>>(
     `/api/v1/product/get_by_code?code=${encodeURIComponent(code)}`,
     { withCredentials: true }
   );
 
-  return response.data;
+  // Convertir el producto único en array para mantener consistencia
+  return {
+    status: response.data.status,
+    message: response.data.message,
+    body: response.data.body ? [response.data.body] : []
+  };
 };
 
 /**

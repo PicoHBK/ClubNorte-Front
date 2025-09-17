@@ -1,14 +1,9 @@
-// src/hooks/admin/Category/useGetCategoryById.ts
 import apiClubNorte from "@/api/apiClubNorte";
 import { useQuery } from "@tanstack/react-query";
 import { getApiError } from "@/utils/apiError";
+import type { Category } from "./categoryType";
 
-export interface CategoryDetail {
-  id: number;
-  name: string;
-}
-
-export interface ApiSuccessResponse<T> {
+interface ApiSuccessResponse<T> {
   status: boolean;
   body: T;
   message: string;
@@ -17,12 +12,12 @@ export interface ApiSuccessResponse<T> {
 /**
  * Llamada a la API para obtener una categoria por ID
  */
-const getCategoryById = async (id: number): Promise<ApiSuccessResponse<CategoryDetail>> => {
+const getCategoryById = async (id: number): Promise<ApiSuccessResponse<Category>> => {
   if (!id) {
     throw new Error("ID de categoria requerido");
   }
 
-  const response = await apiClubNorte.get<ApiSuccessResponse<CategoryDetail>>(
+  const response = await apiClubNorte.get<ApiSuccessResponse<Category>>(
     `/api/v1/category/get/${id}`,
     { withCredentials: true }
   );

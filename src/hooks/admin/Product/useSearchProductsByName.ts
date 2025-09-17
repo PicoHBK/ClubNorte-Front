@@ -2,7 +2,8 @@
 import apiClubNorte from "@/api/apiClubNorte";
 import { useQuery } from "@tanstack/react-query";
 import { getApiError } from "@/utils/apiError";
-import type { Product, ApiSuccessResponse } from "./useGetAllProducts";
+import type { ApiSuccessResponse } from "./useGetAllProducts";
+import type { Product } from "./productType";
 
 /**
  * Llamada a la API para buscar productos por nombre

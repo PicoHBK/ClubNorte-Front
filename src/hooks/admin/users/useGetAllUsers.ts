@@ -1,23 +1,9 @@
 import apiClubNorte from "@/api/apiClubNorte"
 import { useQuery } from "@tanstack/react-query"
 import { getApiError } from "@/utils/apiError"
+import type { User } from "./userType"
 
-export interface Role {
-  id: number
-  name: string
-}
 
-export interface User {
-  id: number
-  first_name: string
-  last_name: string
-  username: string
-  email: string
-  cellphone: string
-  address: string
-  is_admin: boolean
-  role: Role
-}
 
 export interface ApiSuccessResponse<T> {
   status: boolean

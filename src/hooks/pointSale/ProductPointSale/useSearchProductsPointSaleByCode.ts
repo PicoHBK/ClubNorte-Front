@@ -21,16 +21,19 @@ const searchProductsPointSaleByCode = async (
     };
   }
 
-  const response = await apiClubNorte.get<ApiSuccessResponse<Product[]>>(
+  // La API retorna un solo producto, no un array
+  const response = await apiClubNorte.get<ApiSuccessResponse<Product>>(
     `/api/v1/point_sale_product/get_by_code?code=${encodeURIComponent(code)}`,
     { withCredentials: true }
   );
 
-  // Normalizamos la respuesta para que siempre sea { products: [] }
+  // Convertir el producto único en array dentro del objeto normalizado
   return {
     status: response.data.status,
     message: response.data.message,
-    body: { products: response.data.body || [] },
+    body: { 
+      products: response.data.body ? [response.data.body] : [] 
+    },
   };
 };
 

@@ -11,9 +11,10 @@ import {
 } from "@tanstack/react-table"
 
 import { Eye, Search, ArrowUpDown } from "lucide-react"
-import { useGetAllUsers, type User } from "@/hooks/admin/users/useGetAllUsers"
+import { useGetAllUsers} from "@/hooks/admin/users/useGetAllUsers"
 import Modal from "@/components/generic/Modal"
 import EditDeleteUser from "./EditDeleteUser"
+import type { User } from "@/hooks/admin/users/userType"
 
 const TableUsers = () => {
   const [globalFilter, setGlobalFilter] = useState("")

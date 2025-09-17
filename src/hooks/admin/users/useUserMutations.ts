@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import apiClubNorte from "@/api/apiClubNorte";
 import { getApiError } from "@/utils/apiError";
 import useInvalidateQueries from "@/utils/useInvalidateQueries";
+import type { UserUpdateData } from "./userType";
 
 // Query keys que se invalidarán después de las mutaciones
 const QUERIES_TO_INVALIDATE = [
@@ -13,16 +14,6 @@ const QUERIES_TO_INVALIDATE = [
   "UsersGetByRole",
 ];
 
-interface UserUpdateData {
-  address: string;
-  cellphone: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  point_sales_ids: number[];
-  role_id: number;
-  username: string;
-}
 
 interface ApiSuccessResponse<T> {
   status: boolean;
@@ -80,7 +71,6 @@ export const useUserMutations = () => {
   const deleteMutation = useMutation({
     mutationFn: deleteUser,
     onSuccess: async () => {
-      alert("✅ Usuario eliminado con éxito");
       await invalidateQueries(QUERIES_TO_INVALIDATE);
       console.log("Usuario eliminado");
     },

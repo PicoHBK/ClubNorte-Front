@@ -1,18 +1,12 @@
 import apiClubNorte from "@/api/apiClubNorte";
 import { useGetAllCategories } from "@/hooks/admin/Category/useGetAllCategories";
+import type { ProductCreateData } from "@/hooks/admin/Product/productType";
 import { getApiError } from "@/utils/apiError";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 
-interface ProductFormData {
-  category_id: number;
-  code: string;
-  description: string;
-  name: string;
-  price: number;
-}
 
-const postProduct = async (formData: ProductFormData) => {
+const postProduct = async (formData: ProductCreateData) => {
   const { data } = await apiClubNorte.post(
     "/api/v1/product/create",
     formData,
@@ -27,7 +21,7 @@ const FormCreateProduct = () => {
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm<ProductFormData>();
+  } = useForm<ProductCreateData>();
 
   const { categories, isLoading, isError, error } = useGetAllCategories();
 
@@ -47,7 +41,7 @@ const FormCreateProduct = () => {
     },
   });
 
-  const onSubmit = (data: ProductFormData) => {
+  const onSubmit = (data: ProductCreateData) => {
     mutate(data);
   };
 

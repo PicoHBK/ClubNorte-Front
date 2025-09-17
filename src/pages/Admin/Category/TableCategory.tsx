@@ -24,10 +24,10 @@ import {
 } from "lucide-react";
 import {
   useGetAllCategories,
-  type Category,
 } from "@/hooks/admin/Category/useGetAllCategories";
 import Modal from "@/components/generic/Modal";
 import EditDeleteCategory from "./EditDeleteCategory";
+import type { Category } from "@/hooks/admin/Category/categoryType";
 
 const TableCategories = () => {
   const [pagination, setPagination] = useState({

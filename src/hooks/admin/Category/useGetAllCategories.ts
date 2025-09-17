@@ -1,17 +1,9 @@
 import apiClubNorte from "@/api/apiClubNorte";
 import { useQuery } from "@tanstack/react-query";
 import { getApiError } from "@/utils/apiError";
+import type { Category } from "./categoryType";
 
-export interface Category {
-  id: number;
-  name: string;
-}
-
-export interface CategoriesResponse {
-  categories: Category[];
-}
-
-export interface ApiSuccessResponse<T> {
+interface ApiSuccessResponse<T> {
   status: boolean;
   message: string;
   body: T;
@@ -19,7 +11,7 @@ export interface ApiSuccessResponse<T> {
 
 const getAllCategories = async (): Promise<ApiSuccessResponse<Category[]>> => {
   const response = await apiClubNorte.get<ApiSuccessResponse<Category[]>>(
-    "/api/v1/category/get_all", // Ajusta esta ruta según tu API
+    "/api/v1/category/get_all", // ajusta esta ruta según tu API
     { withCredentials: true }
   );
   return response.data;
@@ -28,7 +20,7 @@ const getAllCategories = async (): Promise<ApiSuccessResponse<Category[]>> => {
 export const useGetAllCategories = () => {
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["getAllCategories"],
-    queryFn: () => getAllCategories()
+    queryFn: () => getAllCategories(),
   });
 
   const apiError = getApiError(error);
@@ -39,6 +31,6 @@ export const useGetAllCategories = () => {
     isError,
     error: apiError,
     status: data?.status,
-    message: data?.message
+    message: data?.message,
   };
 };

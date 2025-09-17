@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import apiClubNorte from "@/api/apiClubNorte";
 import { getApiError } from "@/utils/apiError";
 import useInvalidateQueries from "@/utils/useInvalidateQueries";
+import type { ProductUpdateData } from "./productType";
 
 // Query keys que se invalidarán después de las mutaciones
 const QUERIES_TO_INVALIDATE = [
@@ -12,13 +13,6 @@ const QUERIES_TO_INVALIDATE = [
   "ProductsGetByCategory",
 ];
 
-interface ProductUpdateData {
-  category_id: number;
-  code: string;
-  description: string;
-  name: string;
-  price: number;
-}
 
 interface ApiSuccessResponse<T> {
   status: boolean;

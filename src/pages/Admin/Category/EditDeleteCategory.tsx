@@ -3,10 +3,10 @@ import { useForm } from 'react-hook-form';
 import { useGetCategoryById } from '@/hooks/admin/Category/useGetCategoryById';
 import { useCategoryMutations } from '@/hooks/admin/Category/useCategoryMutations';
 import { getApiError } from '@/utils/apiError';
+import SuccessMessage from '@/components/generic/SuccessMessage';
+import type { CategoryUpdateData } from '@/hooks/admin/Category/categoryType';
 
-interface CategoryFormData {
-  name: string;
-}
+
 
 interface EditDeleteCategoryProps {
   id: number;
@@ -19,7 +19,7 @@ const EditDeleteCategory: React.FC<EditDeleteCategoryProps> = ({ id, onClose }) 
     handleSubmit,
     formState: { errors },
     setValue
-  } = useForm<CategoryFormData>();
+  } = useForm<CategoryUpdateData>();
 
   // Obtener datos de la categoría
   const { 
@@ -49,7 +49,7 @@ const EditDeleteCategory: React.FC<EditDeleteCategoryProps> = ({ id, onClose }) 
     }
   }, [category, setValue]);
 
-  const onSubmit = (data: CategoryFormData) => {
+  const onSubmit = (data: CategoryUpdateData) => {
     updateCategory({ id, data });
   };
 
@@ -69,72 +69,35 @@ const EditDeleteCategory: React.FC<EditDeleteCategoryProps> = ({ id, onClose }) 
   // Pantalla de éxito para actualización
   if (isUpdated) {
     return (
-      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
-        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl p-6 w-full max-w-md mx-auto">
-          <div className="text-center">
-            <div className="mb-4">
-              <div className="w-16 h-16 mx-auto bg-green-500/20 rounded-full flex items-center justify-center mb-4">
-                <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h2 className="text-xl font-bold text-white mb-2">¡Categoría Actualizada!</h2>
-              <p className="text-slate-300 text-sm">
-                La categoría ha sido actualizada exitosamente
-              </p>
-            </div>
-            
-            <div className="flex space-x-3">
-              <button
-                onClick={() => resetUpdateState()}
-                className="flex-1 bg-slate-600 hover:bg-slate-500 text-white font-medium py-2 rounded-md text-sm transition"
-              >
-                Editar de nuevo
-              </button>
-              {onClose && (
-                <button
-                  onClick={onClose}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 rounded-md text-sm transition"
-                >
-                  Volver
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      <SuccessMessage
+        title="¡Categoría Actualizada!"
+        description="La categoría ha sido actualizada exitosamente"
+        primaryButton={{
+          text: "Editar de nuevo",
+          onClick: () => resetUpdateState(),
+          variant: "slate"
+        }}
+        secondaryButton={onClose ? {
+          text: "Volver",
+          onClick: onClose,
+          variant: "indigo"
+        } : undefined}
+      />
     );
   }
 
   // Si la categoría fue eliminada exitosamente
   if (isDeleted) {
     return (
-      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
-        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl p-6 w-full max-w-md mx-auto">
-          <div className="text-center">
-            <div className="mb-4">
-              <div className="w-16 h-16 mx-auto bg-green-500/20 rounded-full flex items-center justify-center mb-4">
-                <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h2 className="text-xl font-bold text-white mb-2">¡Categoría Eliminada!</h2>
-              <p className="text-slate-300 text-sm">
-                La categoría ha sido eliminada exitosamente
-              </p>
-            </div>
-            
-            {onClose && (
-              <button
-                onClick={onClose}
-                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 rounded-md text-sm transition"
-              >
-                Volver
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+      <SuccessMessage
+        title="¡Categoría Eliminada!"
+        description="La categoría ha sido eliminada exitosamente"
+        primaryButton={onClose ? {
+          text: "Volver",
+          onClick: onClose,
+          variant: "indigo"
+        } : undefined}
+      />
     );
   }
 

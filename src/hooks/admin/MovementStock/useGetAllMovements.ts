@@ -1,38 +1,9 @@
 import apiClubNorte from "@/api/apiClubNorte";
 import { useQuery } from "@tanstack/react-query";
 import { getApiError } from "@/utils/apiError";
+import type { Movement } from "./movementStockType";
 
 // Interfaces para la estructura de datos
-export interface User {
-  id: number;
-  first_name: string;
-  last_name: string;
-  address: string;
-  cellphone: string;
-  email: string;
-  username: string;
-}
-
-export interface MovementProduct {
-  id: number;
-  code: string;
-  name: string;
-  price: number;
-  stock: number;
-}
-
-export interface Movement {
-  id: number;
-  user: User;
-  product: MovementProduct;
-  amount: number;
-  from_id: number;
-  from_type: "deposit" | "point_sale";
-  to_id: number;
-  to_type: "deposit" | "point_sale";
-  ignore_stock: boolean;
-  created_at: string;
-}
 
 export interface MovementsResponse {
   limit: number;

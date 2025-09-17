@@ -3,33 +3,8 @@
 import apiClubNorte from "@/api/apiClubNorte";
 import { useQuery } from "@tanstack/react-query";
 import { getApiError } from "@/utils/apiError";
+import type { Product } from "./productType";
 
-export interface StockPointSales {
-  id: number;
-  name: string;
-  stock: number;
-}
-
-export interface StockDeposit {
-  id: number;
-  stock: number;
-}
-
-export interface Category {
-  id: number;
-  name: string;
-}
-
-export interface ProductDetail {
-  id: number;
-  code: string;
-  name: string;
-  description: string;
-  category: Category;
-  price: number;
-  stock_point_sales: StockPointSales[];
-  stock_deposit: StockDeposit;
-}
 
 export interface ApiSuccessResponse<T> {
   status: boolean;
@@ -42,12 +17,12 @@ export interface ApiSuccessResponse<T> {
  */
 const getProductsByCategory = async (
   categoryId: number
-): Promise<ApiSuccessResponse<ProductDetail[]>> => {
+): Promise<ApiSuccessResponse<Product[]>> => {
   if (!categoryId) {
     throw new Error("ID de categoría requerido");
   }
 
-  const response = await apiClubNorte.get<ApiSuccessResponse<ProductDetail[]>>(
+  const response = await apiClubNorte.get<ApiSuccessResponse<Product[]>>(
     `/api/v1/product/get_by_category/${categoryId}`,
     { withCredentials: true }
   );

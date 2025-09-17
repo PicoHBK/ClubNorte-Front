@@ -1,6 +1,7 @@
 import Footer from "@/components/headfoot/Footer";
 import Header from "@/components/headfoot/Header";
 import Admin from "@/pages/Admin/Admin";
+import ChangePassword from "@/pages/ChangePassword";
 import Home from "@/pages/Home";
 import PointSale from "@/pages/PointSale/PointSale";
 import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
@@ -29,6 +30,10 @@ const routers = createBrowserRouter([
       {
         path: "point-sale/:id",
         element: <PointSale />,
+      },
+      {
+        path: "change-password",
+        element: <ChangePassword />,
       }
     ],
   },

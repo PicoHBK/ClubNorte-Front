@@ -2,16 +2,10 @@ import { useMutation } from "@tanstack/react-query";
 import apiClubNorte from "@/api/apiClubNorte";
 import { getApiError } from "@/utils/apiError";
 import useInvalidateQueries from "@/utils/useInvalidateQueries";
+import type { CategoryUpdateData } from "./categoryType";
 
 // Query keys que se invalidarán después de las mutaciones
-const QUERIES_TO_INVALIDATE = [
-  "getAllCategories",
-  "CategoryGetById"
-];
-
-interface CategoryUpdateData {
-  name: string;
-}
+const QUERIES_TO_INVALIDATE = ["getAllCategories", "CategoryGetById"];
 
 interface ApiSuccessResponse<T> {
   status: boolean;
@@ -20,13 +14,13 @@ interface ApiSuccessResponse<T> {
 }
 
 // Función para actualizar categoría
-const updateCategory = async (id: number, formData: CategoryUpdateData): Promise<ApiSuccessResponse<string>> => {
+const updateCategory = async (
+  id: number,
+  formData: CategoryUpdateData
+): Promise<ApiSuccessResponse<string>> => {
   const { data } = await apiClubNorte.put(
     `/api/v1/category/update`,
-    {
-      id: id,
-      name: formData.name
-    },
+    { id: id, name: formData.name },
     { withCredentials: true }
   );
   return data;
@@ -34,16 +28,14 @@ const updateCategory = async (id: number, formData: CategoryUpdateData): Promise
 
 // Función para eliminar categoría
 const deleteCategory = async (id: number): Promise<void> => {
-  await apiClubNorte.delete(
-    `/api/v1/category/delete/${id}`,
-    { withCredentials: true }
-  );
+  await apiClubNorte.delete(`/api/v1/category/delete/${id}`, {
+    withCredentials: true,
+  });
 };
 
 export const useCategoryMutations = () => {
   const invalidateQueries = useInvalidateQueries();
 
-  // Mutación para actualizar
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: CategoryUpdateData }) =>
       updateCategory(id, data),
@@ -58,11 +50,9 @@ export const useCategoryMutations = () => {
     },
   });
 
-  // Mutación para eliminar
   const deleteMutation = useMutation({
     mutationFn: deleteCategory,
     onSuccess: async () => {
-      alert("✅ Categoría eliminada con éxito");
       await invalidateQueries(QUERIES_TO_INVALIDATE);
       console.log("Categoría eliminada");
     },
@@ -74,22 +64,16 @@ export const useCategoryMutations = () => {
   });
 
   return {
-    // Funciones de mutación
     updateCategory: updateMutation.mutate,
     deleteCategory: deleteMutation.mutate,
-    // Estados de loading
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
-    // Estados de éxito
     isUpdated: updateMutation.isSuccess,
     isDeleted: deleteMutation.isSuccess,
-    // Errores
     updateError: updateMutation.error,
     deleteError: deleteMutation.error,
-    // Funciones de reset (para limpiar estados)
     resetUpdateState: updateMutation.reset,
     resetDeleteState: deleteMutation.reset,
-    // Mutaciones completas (por si necesitas más control)
     updateMutation,
     deleteMutation,
   };
