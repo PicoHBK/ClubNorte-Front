@@ -16,12 +16,12 @@ export interface ApiSuccessResponse<T> {
  */
 const getIncomeById = async (
   id: number
-): Promise<ApiSuccessResponse<IncomeDetails["body"]>> => {
+): Promise<ApiSuccessResponse<IncomeDetails>> => {
   if (!id) {
     throw new Error("ID de ingreso requerido");
   }
 
-  const response = await apiClubNorte.get<ApiSuccessResponse<IncomeDetails["body"]>>(
+  const response = await apiClubNorte.get<ApiSuccessResponse<IncomeDetails>>(
     `/api/v1/income/get/${id}`,
     { withCredentials: true }
   );

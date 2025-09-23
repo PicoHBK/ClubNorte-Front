@@ -54,26 +54,22 @@ export interface IncomesResponse {
 }
 
 export interface IncomeDetails {
-  status: boolean;
-  body: {
+  id: number;
+  user: User;
+  items: Array<{
     id: number;
-    user: User;
-    items: Array<{
+    product: {
       id: number;
-      product: {
-        id: number;
-        code: string;
-        name: string;
-        price: number;
-      };
-      quantity: number;
-      price: number; // precio unitario aplicado en este ingreso
-      subtotal: number; // cantidad * precio
-    }>;
-    description: string;
-    total: number;
-    payment_method: "efectivo" | "tarjeta" | "transferencia";
-    created_at: string; // ISO con zona horaria
-  };
-  message: string;
+      code: string;
+      name: string;
+      price: number;
+    };
+    quantity: number;
+    price: number; // precio unitario aplicado en este ingreso
+    subtotal: number; // cantidad * precio
+  }>;
+  description: string;
+  total: number;
+  payment_method: "efectivo" | "tarjeta" | "transferencia";
+  created_at: string; // ISO con zona horaria
 }

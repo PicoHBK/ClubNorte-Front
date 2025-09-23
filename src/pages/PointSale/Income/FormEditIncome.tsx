@@ -1,13 +1,14 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useForm, useFieldArray, useWatch, Controller } from 'react-hook-form';
-import { Search, X, Plus, Minus, Edit } from 'lucide-react';
+import { Edit, AlertCircle } from 'lucide-react';
 import type { Product } from '@/hooks/pointSale/ProductPointSale/useGetAllProductsPointSale';
-import ProductSearchInput from './ProductSearchInput/ProductSearchInput';
+import ProductSearchInput from './ProductLogic/ProductSearchInput/ProductSearchInput';
 import { useIncomeMutations } from '@/hooks/pointSale/Income/useIncomeMutations';
 import { useGetIncomeById } from '@/hooks/pointSale/Income/useGetIncomeById';
 import type { IncomeUpdateData } from '@/hooks/pointSale/Income/incomeTypes';
 import SuccessMessage from "@/components/generic/SuccessMessage";
 import { getApiError } from "@/utils/apiError";
+import SelectedProductsListEdit from './ProductLogic/ProductSelected/SelectedProductsListEdit';
 
 interface FormData extends IncomeUpdateData {
   product_search: string; // Solo para el formulario, no se envía al backend
@@ -21,7 +22,7 @@ export default function FormEditIncome({ incomeId }: Props) {
   const [selectedProducts, setSelectedProducts] = useState<Map<number, Product>>(new Map());
 
   // Hook para obtener los datos del ingreso
-  const { income, isLoading: isLoadingIncome, error: incomeError } = useGetIncomeById(incomeId);
+  const { income, isLoading: isLoadingIncome, isError } = useGetIncomeById(incomeId);
 
   // Hook de mutaciones
   const { 
@@ -172,13 +173,14 @@ export default function FormEditIncome({ incomeId }: Props) {
       return;
     }
 
+    // Crear objeto sin product_search usando rest operator
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { product_search, ...submitData } = data;
     updateIncome(submitData);
   }, [selectedProducts, setError, updateIncome]);
 
   // Obtener mensaje de error de la mutación
   const mutationApiError = getApiError(updateError);
-  const incomeApiError = getApiError(incomeError);
 
   // Loading state
   if (isLoadingIncome) {
@@ -192,12 +194,12 @@ export default function FormEditIncome({ incomeId }: Props) {
     );
   }
 
-  // Error loading income
-  if (incomeError) {
+  // Error loading income o No encontrado
+  if (isError || !income && !isLoadingIncome) {
     return (
-      <div className="p-4 text-center">
-        <div className="text-red-400 mb-2">Error al cargar</div>
-        <p className="text-slate-300 text-sm">{incomeApiError?.message || 'Error desconocido'}</p>
+      <div className="flex flex-col items-center justify-center p-8 text-slate-300 bg-slate-900/80 border border-white/10 rounded-2xl shadow-inner backdrop-blur-md">
+        <AlertCircle className="w-6 h-6 mb-2 text-slate-400" />
+        <span className="text-sm">No se encontró el ingreso</span>
       </div>
     );
   }
@@ -291,97 +293,18 @@ export default function FormEditIncome({ incomeId }: Props) {
           />
         </div>
 
-        {/* Lista de productos */}
+        {/* Lista de productos - Ahora usando el componente reutilizable */}
         <div>
           <label className="block text-sm text-slate-300 mb-1">Productos ({fields.length})</label>
-          
-          <div className="bg-slate-800 border border-slate-700 rounded max-h-60 overflow-y-auto">
-            {fields.length === 0 ? (
-              <div className="text-center py-6 text-slate-400">
-                <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No hay productos</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-700">
-                {fields.map((field, index) => {
-                  const product = selectedProducts.get(field.product_id);
-                  const quantity = watchedItems[index]?.quantity || 0;
-                  const subtotal = (product?.price || 0) * quantity;
-
-                  return (
-                    <div key={field.id} className="p-3 hover:bg-slate-700/30">
-                      
-                      {/* Fila 1: Producto y precio */}
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-white text-sm truncate">
-                            {product?.name || 'Producto no encontrado'}
-                          </div>
-                          <div className="text-xs text-slate-400">
-                            Stock: {product?.stock || 0} • ${product?.price?.toFixed(2) || '0.00'}
-                          </div>
-                        </div>
-                        <div className="text-emerald-400 font-semibold ml-2">
-                          ${subtotal.toFixed(2)}
-                        </div>
-                      </div>
-
-                      {/* Fila 2: Controles de cantidad */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => updateQuantity(index, -1)}
-                            disabled={quantity <= 1 || isUpdating}
-                            className="w-7 h-7 rounded bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:opacity-50 flex items-center justify-center text-white transition-colors"
-                          >
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          
-                          <input
-                            type="number"
-                            min="1"
-                            max={product?.stock || 999}
-                            {...register(`items.${index}.quantity`, { 
-                              valueAsNumber: true,
-                              min: 1,
-                              max: product?.stock || 999,
-                              onChange: (e) => {
-                                const newQuantity = parseInt(e.target.value) || 1;
-                                if (product && newQuantity > product.stock) {
-                                  setValue(`items.${index}.quantity`, product.stock);
-                                }
-                              }
-                            })}
-                            disabled={isUpdating}
-                            className="w-12 h-7 px-2 bg-slate-700 text-white text-center border border-slate-600 rounded text-sm focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
-                          />
-                          
-                          <button
-                            type="button"
-                            onClick={() => updateQuantity(index, 1)}
-                            disabled={quantity >= (product?.stock || 0) || isUpdating}
-                            className="w-7 h-7 rounded bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:opacity-50 flex items-center justify-center text-white transition-colors"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => removeProduct(index, field.product_id)}
-                          disabled={isUpdating}
-                          className="w-7 h-7 rounded bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300 flex items-center justify-center transition-colors disabled:opacity-50"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <SelectedProductsListEdit
+            fields={fields}
+            selectedProducts={selectedProducts}
+            watchedItems={watchedItems}
+            updateQuantity={updateQuantity}
+            removeProduct={removeProduct}
+            register={register}
+            isCreating={isUpdating}
+          />
         </div>
 
         {/* Total y botón */}

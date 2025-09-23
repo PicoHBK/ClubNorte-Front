@@ -11,10 +11,10 @@ type IncomeActionsProps = {
   onDeleteSuccess?: () => void // Opcional: callback cuando se elimina exitosamente
 }
 
-const IncomeActions: React.FC<IncomeActionsProps> = ({ 
-  id, 
+const IncomeActions: React.FC<IncomeActionsProps> = ({
+  id,
   incomeName,
-  onDeleteSuccess 
+  onDeleteSuccess
 }) => {
   const { isUserAdmin, getUserRole } = useUserStore()
   
@@ -67,7 +67,7 @@ const IncomeActions: React.FC<IncomeActionsProps> = ({
           {canEdit && (
             <TabsContent value="eliminar">
               <DeleteIncomeComponent
-                incomeId={id.toString()}
+                incomeId={id} // Ya no necesita toString(), pasamos number directamente
                 incomeName={incomeName}
                 onDeleteSuccess={onDeleteSuccess}
               />

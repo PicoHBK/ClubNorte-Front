@@ -1,23 +1,27 @@
 import React, { useState } from 'react';
-import { Trash2, AlertTriangle } from 'lucide-react';
+import { Trash2, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useIncomeMutations } from '@/hooks/pointSale/Income/useIncomeMutations';
 import { useGetIncomeById } from '@/hooks/pointSale/Income/useGetIncomeById';
 
 interface DeleteIncomeComponentProps {
-  incomeId: string;
-  onDeleteSuccess?: () => void; // Callback opcional cuando se elimina exitosamente
+  incomeId: number;
+  incomeName?: string;
+  onDeleteSuccess?: () => void;
 }
 
 const DeleteIncomeComponent: React.FC<DeleteIncomeComponentProps> = ({
   incomeId,
+  incomeName,
   onDeleteSuccess
 }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const { deleteIncome, isDeleting, deleteError, isDeleted } = useIncomeMutations();
-  const { income, isLoading } = useGetIncomeById(parseInt(incomeId));
+  const { income, isLoading } = useGetIncomeById(incomeId);
 
   // Construir nombre descriptivo del ingreso
   const getIncomeDisplayName = () => {
+    if (incomeName) return incomeName;
+    
     if (!income) return "este ingreso";
     
     const date = new Date(income.created_at).toLocaleDateString('es-AR');
@@ -31,14 +35,39 @@ const DeleteIncomeComponent: React.FC<DeleteIncomeComponentProps> = ({
 
   React.useEffect(() => {
     if (isDeleted) {
-      setShowConfirmation(false);
-      onDeleteSuccess?.();
+      // Opcional: mostrar mensaje de éxito por unos segundos antes de ejecutar callback
+      const timer = setTimeout(() => {
+        onDeleteSuccess?.();
+      }, 1500); // Da tiempo para mostrar el mensaje de éxito
+
+      return () => clearTimeout(timer);
     }
   }, [isDeleted, onDeleteSuccess]);
 
   const handleDelete = () => {
-    deleteIncome(incomeId);
+    deleteIncome(incomeId.toString());
   };
+
+  // Si ya se eliminó exitosamente, mostrar mensaje de confirmación
+  if (isDeleted) {
+    return (
+      <div className="space-y-4">
+        <div className="p-4 bg-green-500/20 border border-green-500/30 rounded-lg">
+          <div className="flex items-start gap-3">
+            <CheckCircle className="w-5 h-5 text-green-400 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-white mb-1">
+                Ingreso eliminado exitosamente
+              </h3>
+              <p className="text-slate-200 text-sm">
+                {getIncomeDisplayName()} ha sido eliminado correctamente.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!showConfirmation) {
     return (
