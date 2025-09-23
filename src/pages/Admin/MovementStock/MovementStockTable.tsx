@@ -23,9 +23,9 @@ import { useSearchProductsByName } from "@/hooks/admin/Product/useSearchProducts
 import { useSearchProductsByCode } from "@/hooks/admin/Product/useSearchProductsByCode";
 import { useGetProductsByCategory } from "@/hooks/admin/Product/useGetProductsByCategory";
 import { useGetAllCategories } from "@/hooks/admin/Category/useGetAllCategories";
-import type { Product } from "@/hooks/admin/Product/useGetAllProducts";
 
 import FormMovementStock from "./FormMovementStock";
+import type { Product } from "@/hooks/admin/Product/productType";
 
 const TableReponerStock = () => {
   // Estados para búsqueda
@@ -142,11 +142,14 @@ const TableReponerStock = () => {
     columnHelper.display({
       id: "stock_deposit",
       header: "Stock Depósito",
-      cell: (info) => (
-        <span className="text-emerald-500 font-semibold">
-          {info.row.original.stock_deposit?.stock ?? 0}
-        </span>
-      ),
+     cell: (info) => {
+  const stock = info.row.original.stock_deposit?.stock ?? 0;
+  return (
+    <span className={`font-semibold ${stock < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+      {stock}
+    </span>
+  );
+},
     }),
     columnHelper.display({
       id: "stock_point_sales",

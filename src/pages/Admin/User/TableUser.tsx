@@ -24,25 +24,28 @@ const TableUsers = () => {
   const { users, isLoading } = useGetAllUsers()
 
   // Para el Modal de Usuario
-const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 
   const columnHelper = createColumnHelper<User>()
 
-  /** � Filtro global personalizado */
+  /** 🔍 Filtro global personalizado */
   const customGlobalFilter: FilterFn<User> = (row, _columnId, filterValue) => {
     const search = filterValue.toLowerCase()
     const user = row.original
+    const statusText = user.is_active ? "activo" : "inactivo"
+    
     return (
       user.first_name.toLowerCase().includes(search) ||
       user.last_name.toLowerCase().includes(search) ||
       user.email.toLowerCase().includes(search) ||
       user.username.toLowerCase().includes(search) ||
-      user.role.name.toLowerCase().includes(search)
+      user.role.name.toLowerCase().includes(search) ||
+      statusText.includes(search)
     )
   }
 
-  /** �️ Definición de columnas */
+  /** 🏗️ Definición de columnas */
   const columns = [
     columnHelper.accessor("id", {
       header: "ID",
@@ -76,7 +79,7 @@ const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
       ),
     }),
 
-    // � Columna de Rol
+    // 👤 Columna de Rol
     columnHelper.accessor(row => row.role?.name ?? "Sin rol", {
       id: "role",
       header: () => (
@@ -90,6 +93,30 @@ const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
           {info.getValue()}
         </span>
       ),
+    }),
+
+    // ✅ Columna de Estado (is_active)
+    columnHelper.accessor("is_active", {
+      header: () => (
+        <button className="flex items-center gap-1 text-slate-300 hover:text-white transition">
+          Estado
+          <ArrowUpDown className="w-4 h-4" />
+        </button>
+      ),
+      cell: info => {
+        const isActive = info.getValue()
+        return (
+          <span
+            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+              isActive
+                ? "bg-green-900/50 text-green-400 border border-green-700/50"
+                : "bg-red-900/50 text-red-400 border border-red-700/50"
+            }`}
+          >
+            {isActive ? "Activo" : "Inactivo"}
+          </span>
+        )
+      },
     }),
 
     // ⚙️ Acciones
@@ -140,7 +167,7 @@ const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
           <Search className="absolute left-3 top-2.5 w-5 h-5 text-slate-400" />
           <input
             type="text"
-            placeholder="Buscar por nombre, usuario, email o rol..."
+            placeholder="Buscar por nombre, usuario, email, rol o estado..."
             value={globalFilter ?? ""}
             onChange={(e) => setGlobalFilter(e.target.value)}
             className="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
@@ -203,14 +230,14 @@ const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
         isOpen={isEditModalOpen}
         onClose={() => {
           setIsEditModalOpen(false);
-          setSelectedUserId(null); // Arreglar aquí también
+          setSelectedUserId(null);
         }}
-        title="Editar Producto" // Cambiar título también
+        title="Editar Usuario"
         size="md"
       >
-        {selectedUserId && ( // Cambiar la condición
+        {selectedUserId && (
           <EditDeleteUser
-            id={selectedUserId} // Ahora no será null
+            id={selectedUserId}
             onClose={() => setIsEditModalOpen(false)}
           />
         )}

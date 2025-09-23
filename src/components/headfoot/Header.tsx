@@ -1,14 +1,15 @@
 import { LogOut, User, Loader2, Settings } from 'lucide-react'
 import { useNavigate, useLocation } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu"
 import useUserStore from '@/store/useUserStore'
+import NotificationDropdown from '../generic/NotificationDropdown'
 
 const Header = () => {
   const navigate = useNavigate()
@@ -16,10 +17,10 @@ const Header = () => {
   
   // Estados del store
   const { logout, isLoading, user, getUserFullName } = useUserStore()
-  
+
   // Si está en "/" (login), no mostrar el header
   if (location.pathname === "/") return null
-  
+
   const handleLogout = async () => {
     try {
       await logout()
@@ -50,14 +51,17 @@ const Header = () => {
               )}
             </div>
           </div>
-          
-          {/* Menú de Usuario */}
+
+          {/* Menú de Usuario y Notificaciones */}
           <div className="flex items-center gap-3">
+            {/* Componente de Notificaciones */}
+            <NotificationDropdown />
+
             {/* Dropdown de Configuración */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   size="sm"
                   className="bg-slate-700 border-slate-500 hover:bg-slate-600 text-white"
                 >
@@ -65,7 +69,7 @@ const Header = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56 bg-slate-800 border-slate-600">
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={handleChangePassword}
                   className="text-slate-200 hover:bg-slate-700 cursor-pointer"
                 >
@@ -73,7 +77,7 @@ const Header = () => {
                   Cambiar Contraseña
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-slate-600" />
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={handleLogout}
                   disabled={isLoading}
                   className="text-red-400 hover:bg-slate-700 cursor-pointer"

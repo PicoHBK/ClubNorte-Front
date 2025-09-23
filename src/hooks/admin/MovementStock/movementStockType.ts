@@ -13,6 +13,17 @@ export interface Movement {
   created_at: string;
 }
 
+// Para crear un movimiento de stock
+export interface MovementStockCreateData {
+  amount: number;
+  from_id: number;
+  from_type: "deposit" | "point_sale";
+  to_id: number;
+  to_type: "deposit" | "point_sale";
+  product_id: number;
+  ignore_stock: boolean;
+}
+
 interface MovementProduct {
   id: number;
   code: string;

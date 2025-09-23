@@ -7,61 +7,53 @@ import {
 } from "@/components/ui/accordion";
 import { usePointSaleGetAll } from "@/hooks/pointSale/usePointSaleGetAll";
 import { useGetProductById } from "@/hooks/admin/Product/useGetProductById";
-import { useMutation } from "@tanstack/react-query";
-import apiClubNorte from "@/api/apiClubNorte";
-import useInvalidateQueries from "@/utils/useInvalidateQueries";
+import SuccessMessage from "@/components/generic/SuccessMessage";
+import { getApiError } from "@/utils/apiError";
 import { Package } from "lucide-react";
+import { useMovementStockMutations } from "@/hooks/admin/MovementStock/useMovementStockMutations";
 
 interface FormMovementStockProps {
   productId: number;
 }
 
-interface MovementStockPayload {
-  amount: number;
-  from_id: number;
-  from_type: "deposit" | "point_sale";
-  ignore_stock: boolean;
-  product_id: number;
-  to_id: number;
-  to_type: "deposit" | "point_sale";
-}
-
 const FormMovementStock: React.FC<FormMovementStockProps> = ({ productId }) => {
-  const invalidateQueries = useInvalidateQueries();
   const { pointSales, isLoading: isLoadingPoints } = usePointSaleGetAll();
-
   const {
     product,
     isLoading: isLoadingProduct,
     isError,
   } = useGetProductById(productId);
 
-  const moveStockMutation = useMutation({
-    mutationFn: async (data: MovementStockPayload) => {
-      const response = await apiClubNorte.post("/api/v1/movement_stock/move", data, {
-        withCredentials: true,
-      });
-      return response.data;
-    },
-    onSuccess: async () => {
-      await invalidateQueries(["getAllProducts", "ProductGetById","searchProductsByName","searchProductsByCode","ProductsGetByCategory","getAllMovements"]);
-      alert("Movimiento realizado con éxito ✅");
+  const {
+    createMovementStock,
+    isCreating,
+    isCreated,
+    createError,
+    resetCreateState
+  } = useMovementStockMutations();
 
-      // Resetear todos los estados
-      setSelectedPoints([]);
-      setIgnoreStockDeposit(false);
-      setFromPointId("");
-      setToPointId("");
-      setMoveAmount(0);
-      setIgnoreStockPoints(false);
-    },
-    onError: () => {
-      alert("Ocurrió un error. Contacte al administrador.");
-    },
-  });
-
+  // Estados para depósito → puntos de venta
   const [selectedPoints, setSelectedPoints] = useState<{ id: number; amount: number }[]>([]);
   const [ignoreStockDeposit, setIgnoreStockDeposit] = useState(false);
+
+  // Estados para punto de venta → depósito/otro punto
+  const [fromPointId, setFromPointId] = useState<number | "">("");
+  const [toPointId, setToPointId] = useState<number | "">("");
+  const [moveAmount, setMoveAmount] = useState<number>(0);
+  const [ignoreStockPoints, setIgnoreStockPoints] = useState(false);
+
+  // Función para resetear todos los estados del formulario
+  const resetAllStates = () => {
+    setSelectedPoints([]);
+    setIgnoreStockDeposit(false);
+    setFromPointId("");
+    setToPointId("");
+    setMoveAmount(0);
+    setIgnoreStockPoints(false);
+  };
+
+  // Obtener mensaje de error de la mutación
+  const mutationApiError = getApiError(createError);
 
   const handleCheckboxChange = (pointId: number) => {
     setSelectedPoints((prev) => {
@@ -87,28 +79,31 @@ const FormMovementStock: React.FC<FormMovementStockProps> = ({ productId }) => {
       return;
     }
 
-    if (total > (product?.stock_deposit?.stock ?? 0) && !ignoreStockDeposit) {
+    // Solo validar stock si ignoreStockDeposit está desactivado
+    if (!ignoreStockDeposit && total > (product?.stock_deposit?.stock ?? 0)) {
       alert("No puedes mover más stock del disponible en depósito.");
       return;
     }
 
-    selectedPoints.forEach((p) => {
-      moveStockMutation.mutate({
-        amount: p.amount,
-        from_id: 1,
-        from_type: "deposit",
-        ignore_stock: ignoreStockDeposit,
-        product_id: product.id,
-        to_id: p.id,
-        to_type: "point_sale",
-      });
-    });
+    // Ejecutar movimientos secuencialmente
+    for (const point of selectedPoints) {
+      if (point.amount > 0) {
+        createMovementStock({
+          amount: point.amount,
+          from_id: 1,
+          from_type: "deposit",
+          ignore_stock: ignoreStockDeposit,
+          product_id: product.id,
+          to_id: point.id,
+          to_type: "point_sale",
+        }, {
+          onSuccess: () => {
+            resetAllStates();
+          }
+        });
+      }
+    }
   };
-
-  const [fromPointId, setFromPointId] = useState<number | "">("");
-  const [toPointId, setToPointId] = useState<number | "">("");
-  const [moveAmount, setMoveAmount] = useState<number>(0);
-  const [ignoreStockPoints, setIgnoreStockPoints] = useState(false);
 
   const handleMoveBetweenPoints = () => {
     if (!product) return;
@@ -131,28 +126,49 @@ const FormMovementStock: React.FC<FormMovementStockProps> = ({ productId }) => {
       return;
     }
 
+    // Siempre validar stock en movimientos entre puntos de venta
     if (moveAmount > fromStock && !ignoreStockPoints) {
       alert("No puedes mover más stock del disponible en el punto de venta de origen.");
       return;
     }
 
-    const payload: MovementStockPayload = {
+    createMovementStock({
       amount: moveAmount,
       from_id: fromPointId,
       from_type: "point_sale",
-      ignore_stock: ignoreStockPoints,
+      ignore_stock: ignoreStockPoints, // Siempre false para movimientos entre puntos
       product_id: product.id,
       to_id: toPointId === 0 ? 1 : toPointId,
       to_type: toPointId === 0 ? "deposit" : "point_sale",
-    };
-
-    moveStockMutation.mutate(payload);
+    }, {
+      onSuccess: () => {
+        resetAllStates();
+      }
+    });
   };
 
   // Mostrar stock por punto
   const getStockForPointSale = (pointSaleId: number): number => {
     return product?.stock_point_sales?.find((ps) => ps.id === pointSaleId)?.stock ?? 0;
   };
+
+  // Si el movimiento fue exitoso, mostrar mensaje de éxito
+  if (isCreated) {
+    return (
+      <SuccessMessage
+        title="¡Movimiento Realizado!"
+        description="El movimiento de stock ha sido realizado exitosamente. Los inventarios han sido actualizados."
+        primaryButton={{
+          text: "Realizar Otro Movimiento",
+          onClick: () => {
+            resetCreateState();
+            resetAllStates();
+          },
+          variant: 'indigo'
+        }}
+      />
+    );
+  }
 
   // Estados de carga o error
   if (isLoadingPoints || isLoadingProduct) {
@@ -170,6 +186,22 @@ const FormMovementStock: React.FC<FormMovementStockProps> = ({ productId }) => {
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-bold text-white">Mover Stock</h2>
+
+      {/* Mostrar error de mutación si existe */}
+      {mutationApiError && (
+        <div className="bg-red-500/20 border border-red-500/50 rounded-md p-3 mb-4">
+          <p className="text-red-400 text-sm text-center">
+            {mutationApiError.message}
+          </p>
+          <button
+            type="button"
+            onClick={() => resetCreateState()}
+            className="mt-2 w-full px-3 bg-red-600 hover:bg-red-500 text-white font-medium py-1.5 rounded-md text-sm transition"
+          >
+            ✕ Cerrar Error
+          </button>
+        </div>
+      )}
 
       <Accordion type="single" collapsible className="w-full space-y-3">
         {/* Zona 1: Depósito → Puntos de Venta */}
@@ -199,6 +231,7 @@ const FormMovementStock: React.FC<FormMovementStockProps> = ({ productId }) => {
                     type="checkbox"
                     checked={!!selectedPoints.find((p) => p.id === point.id)}
                     onChange={() => handleCheckboxChange(point.id)}
+                    disabled={isCreating}
                   />
                   <span className="flex-1 text-slate-300 flex items-center gap-2">
                     {point.name}
@@ -210,8 +243,8 @@ const FormMovementStock: React.FC<FormMovementStockProps> = ({ productId }) => {
                   <input
                     type="number"
                     min={0}
-                    className="w-20 px-2 py-1 rounded bg-slate-800 text-white border border-slate-600"
-                    disabled={!selectedPoints.find((p) => p.id === point.id)}
+                    className="w-20 px-2 py-1 rounded bg-slate-800 text-white border border-slate-600 disabled:opacity-50"
+                    disabled={!selectedPoints.find((p) => p.id === point.id) || isCreating}
                     value={selectedPoints.find((p) => p.id === point.id)?.amount || ""}
                     onChange={(e) => handleAmountChange(point.id, Number(e.target.value))}
                   />
@@ -224,16 +257,19 @@ const FormMovementStock: React.FC<FormMovementStockProps> = ({ productId }) => {
                 type="checkbox"
                 checked={ignoreStockDeposit}
                 onChange={(e) => setIgnoreStockDeposit(e.target.checked)}
+                disabled={isCreating}
               />
-              <label className="text-slate-300 text-sm">Ignorar validación de stock</label>
+              <label className="text-slate-300 text-sm">
+                Ignorar validación de stock (permitir stock negativo en depósito)
+              </label>
             </div>
 
             <button
               onClick={handleMoveFromDeposit}
-              disabled={moveStockMutation.isPending}
+              disabled={isCreating}
               className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg border border-slate-600 disabled:opacity-50"
             >
-              {moveStockMutation.isPending ? "Procesando..." : "Mover desde Depósito"}
+              {isCreating ? "Procesando..." : "Mover desde Depósito"}
             </button>
           </AccordionContent>
         </AccordionItem>
@@ -252,9 +288,10 @@ const FormMovementStock: React.FC<FormMovementStockProps> = ({ productId }) => {
               <div>
                 <label className="block text-slate-300 text-sm mb-1">Origen</label>
                 <select
-                  className="w-full px-3 py-2 rounded bg-slate-800 text-white border border-slate-600"
+                  className="w-full px-3 py-2 rounded bg-slate-800 text-white border border-slate-600 disabled:opacity-50"
                   value={fromPointId}
                   onChange={(e) => setFromPointId(Number(e.target.value))}
+                  disabled={isCreating}
                 >
                   <option value="">Seleccione punto de venta</option>
                   {product?.stock_point_sales?.map((ps) => (
@@ -269,12 +306,12 @@ const FormMovementStock: React.FC<FormMovementStockProps> = ({ productId }) => {
               <div>
                 <label className="block text-slate-300 text-sm mb-1">Destino</label>
                 <select
-                  className="w-full px-3 py-2 rounded bg-slate-800 text-white border border-slate-600"
+                  className="w-full px-3 py-2 rounded bg-slate-800 text-white border border-slate-600 disabled:opacity-50"
                   value={toPointId}
                   onChange={(e) => setToPointId(Number(e.target.value))}
+                  disabled={isCreating}
                 >
                   <option value="">Seleccione destino</option>
-                  {/* ✅ Stock seguro del depósito */}
                   <option value={0}>
                     Depósito (Stock: {product?.stock_deposit?.stock ?? 0})
                   </option>
@@ -298,28 +335,18 @@ const FormMovementStock: React.FC<FormMovementStockProps> = ({ productId }) => {
                   min={0}
                   value={moveAmount}
                   onChange={(e) => setMoveAmount(Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded bg-slate-800 text-white border border-slate-600"
+                  className="w-full px-3 py-2 rounded bg-slate-800 text-white border border-slate-600 disabled:opacity-50"
+                  disabled={isCreating}
                 />
               </div>
             </div>
 
-            <div className="flex items-center gap-2 mt-2">
-              <input
-                type="checkbox"
-                checked={ignoreStockPoints}
-                onChange={(e) => setIgnoreStockPoints(e.target.checked)}
-              />
-              <label className="text-slate-300 text-sm">Ignorar validación de stock</label>
-            </div>
-
             <button
               onClick={handleMoveBetweenPoints}
-              disabled={moveStockMutation.isPending}
+              disabled={isCreating}
               className="w-full py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg border border-slate-600 disabled:opacity-50"
             >
-              {moveStockMutation.isPending
-                ? "Procesando..."
-                : "Mover entre Puntos de Venta / Depósito"}
+              {isCreating ? "Procesando..." : "Mover entre Puntos de Venta / Depósito"}
             </button>
           </AccordionContent>
         </AccordionItem>

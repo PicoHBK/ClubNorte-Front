@@ -3,22 +3,30 @@ import { useForm, useFieldArray, useWatch, Controller } from 'react-hook-form';
 import { Search, X, Plus, Minus, ShoppingCart } from 'lucide-react';
 import type { Product } from '@/hooks/pointSale/ProductPointSale/useGetAllProductsPointSale';
 import ProductSearchInput from './ProductSearchInput/ProductSearchInput';
+import { useIncomeMutations } from '@/hooks/pointSale/Income/useIncomeMutations';
+import type { IncomeCreateData } from '@/hooks/pointSale/Income/incomeTypes';
+import SuccessMessage from "@/components/generic/SuccessMessage";
+import { getApiError } from "@/utils/apiError";
 
-interface FormData {
-  description: string;
-  items: Array<{
-    product_id: number;
-    quantity: number;
-  }>;
-  payment_method: string;
-  product_search: string;
+interface FormData extends IncomeCreateData {
+  product_search: string; // Solo para el formulario, no se envía al backend
 }
 
 export default function FormCreateIncome() {
   const [selectedProducts, setSelectedProducts] = useState<Map<number, Product>>(new Map());
 
+  // Hook de mutaciones - asumiendo que tiene las mismas propiedades que useCategoryMutations
+  const { 
+    createIncome, 
+    isCreating, 
+    createError, 
+    isCreated,
+    resetCreateState 
+  } = useIncomeMutations();
+  
+
   // Form setup
-  const { register, control, handleSubmit, setValue, setError, clearErrors } = useForm<FormData>({
+  const { register, control, handleSubmit, setValue, setError, clearErrors, reset } = useForm<FormData>({
     defaultValues: {
       description: '',
       items: [],
@@ -99,6 +107,12 @@ export default function FormCreateIncome() {
     remove(index);
   }, [remove]);
 
+  // Función para resetear todo el formulario
+  const resetForm = useCallback(() => {
+    reset();
+    setSelectedProducts(new Map());
+  }, [reset]);
+
   // Submit
   const onSubmit = useCallback((data: FormData) => {
     let hasStockErrors = false;
@@ -120,8 +134,33 @@ export default function FormCreateIncome() {
     }
 
     const { product_search, ...submitData } = data;
-    console.log({ ...submitData, total });
-  }, [total, selectedProducts, setError]);
+    createIncome(submitData, {
+      onSuccess: () => {
+        resetForm(); // Resetear formulario después del éxito
+      }
+    });
+  }, [selectedProducts, setError, createIncome, resetForm]);
+
+  // Obtener mensaje de error de la mutación
+  const mutationApiError = getApiError(createError);
+
+  // Si el ingreso fue creado exitosamente, mostrar mensaje de éxito
+  if (isCreated) {
+    return (
+      <SuccessMessage
+        title="¡Ingreso Creado!"
+        description="El ingreso ha sido registrado exitosamente y el inventario ha sido actualizado."
+        primaryButton={{
+          text: "Crear Otro",
+          onClick: () => {
+            resetCreateState();
+            resetForm();
+          },
+          variant: 'indigo'
+        }}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
@@ -143,6 +182,15 @@ export default function FormCreateIncome() {
           </div>
 
           <div className="p-6">
+            {/* Mostrar error de mutación si existe */}
+            {mutationApiError && (
+              <div className="bg-red-500/20 border border-red-500/50 rounded-md p-4 mb-6">
+                <p className="text-red-400 text-center">
+                  {mutationApiError.message}
+                </p>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               
               {/* Layout optimizado para tablet - descripción removida del área principal */}
@@ -168,8 +216,9 @@ export default function FormCreateIncome() {
                             {...register('payment_method')}
                             value={value}
                             className="sr-only peer"
+                            disabled={isCreating}
                           />
-                          <div className="flex items-center justify-center gap-2 py-3 px-2 rounded-md text-center transition-all peer-checked:bg-indigo-600 peer-checked:text-white text-slate-400 hover:text-slate-300 peer-checked:shadow-md">
+                          <div className="flex items-center justify-center gap-2 py-3 px-2 rounded-md text-center transition-all peer-checked:bg-indigo-600 peer-checked:text-white text-slate-400 hover:text-slate-300 peer-checked:shadow-md peer-disabled:opacity-50 peer-disabled:cursor-not-allowed">
                             <span className="text-lg">{icon}</span>
                             <span className="font-medium text-sm">{label}</span>
                           </div>
@@ -208,6 +257,7 @@ export default function FormCreateIncome() {
                           onProductSelect={addProduct}
                           selectedProducts={Array.from(selectedProducts.values())}
                           placeholder="Buscar productos..."
+                          disabled={isCreating}
                         />
                       )}
                     />
@@ -264,7 +314,7 @@ export default function FormCreateIncome() {
                                     <button
                                       type="button"
                                       onClick={() => updateQuantity(index, -1)}
-                                      disabled={quantity <= 1}
+                                      disabled={quantity <= 1 || isCreating}
                                       className="w-6 h-6 rounded bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:opacity-50 flex items-center justify-center text-white transition-colors"
                                     >
                                       <Minus className="w-3 h-3" />
@@ -285,13 +335,14 @@ export default function FormCreateIncome() {
                                           }
                                         }
                                       })}
-                                      className="w-12 h-6 px-1 bg-slate-800 text-white text-center text-sm border border-slate-600 rounded focus:ring-1 focus:ring-indigo-500 focus:border-transparent"
+                                      disabled={isCreating}
+                                      className="w-12 h-6 px-1 bg-slate-800 text-white text-center text-sm border border-slate-600 rounded focus:ring-1 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                                     />
                                     
                                     <button
                                       type="button"
                                       onClick={() => updateQuantity(index, 1)}
-                                      disabled={quantity >= (product?.stock || 0)}
+                                      disabled={quantity >= (product?.stock || 0) || isCreating}
                                       className="w-6 h-6 rounded bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:opacity-50 flex items-center justify-center text-white transition-colors"
                                     >
                                       <Plus className="w-3 h-3" />
@@ -307,7 +358,8 @@ export default function FormCreateIncome() {
                                   <button
                                     type="button"
                                     onClick={() => removeProduct(index, field.product_id)}
-                                    className="w-6 h-6 rounded bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300 flex items-center justify-center transition-colors"
+                                    disabled={isCreating}
+                                    className="w-6 h-6 rounded bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300 flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
                                     <X className="w-3 h-3" />
                                   </button>
@@ -324,13 +376,31 @@ export default function FormCreateIncome() {
 
               {/* Submit button mejorado */}
               <div className="pt-6 border-t border-white/10">
-                <button
-                  type="submit"
-                  disabled={fields.length === 0}
-                  className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all transform hover:scale-[1.01] disabled:hover:scale-100 disabled:opacity-60 text-lg shadow-lg"
-                >
-                  {fields.length === 0 ? 'Agrega productos para continuar' : `Crear Ingreso • ${total.toFixed(2)}`}
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    disabled={fields.length === 0 || isCreating}
+                    className="flex-1 py-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all transform hover:scale-[1.01] disabled:hover:scale-100 disabled:opacity-60 text-lg shadow-lg"
+                  >
+                    {isCreating 
+                      ? 'Creando ingreso...' 
+                      : fields.length === 0 
+                        ? 'Agrega productos para continuar' 
+                        : `Crear Ingreso • $${total.toFixed(2)}`
+                    }
+                  </button>
+
+                  {/* Botón para limpiar estado si hay error */}
+                  {createError && (
+                    <button
+                      type="button"
+                      onClick={() => resetCreateState()}
+                      className="px-6 bg-slate-600 hover:bg-slate-500 text-white font-medium py-4 rounded-xl text-sm transition"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Descripción opcional al final */}
@@ -343,7 +413,8 @@ export default function FormCreateIncome() {
                   <div className="pt-3">
                     <textarea
                       {...register('description')}
-                      className="w-full px-4 py-3 bg-slate-800 text-white placeholder-slate-400 border border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-sm"
+                      disabled={isCreating}
+                      className="w-full px-4 py-3 bg-slate-800 text-white placeholder-slate-400 border border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                       placeholder="Descripción del ingreso (opcional)..."
                       rows={3}
                     />

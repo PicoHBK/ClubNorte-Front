@@ -12,6 +12,8 @@ interface ProductFormData {
   description: string;
   name: string;
   price: number;
+  min_amount: number;
+  notifier: boolean;
 }
 
 interface EditDeleteProductProps {
@@ -64,6 +66,8 @@ const EditDeleteProduct: React.FC<EditDeleteProductProps> = ({ id, onClose }) =>
       setValue('description', product.description);
       setValue('price', product.price);
       setValue('category_id', product.category.id);
+      setValue('min_amount', product.min_amount);
+      setValue('notifier', product.notifier);
     }
   }, [product, setValue]);
 
@@ -210,54 +214,55 @@ const EditDeleteProduct: React.FC<EditDeleteProductProps> = ({ id, onClose }) =>
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* Nombre */}
-          <div>
-            <label className="block text-xs text-slate-200 mb-1">Nombre</label>
-            <input
-              type="text"
-              {...register('name', {
-                required: 'Nombre obligatorio',
-                minLength: {
-                  value: 2,
-                  message: 'El nombre debe tener al menos 2 caracteres'
-                },
-                maxLength: {
-                  value: 100,
-                  message: 'El nombre no puede exceder los 100 caracteres'
-                }
-              })}
-              className={inputClass}
-              placeholder="Nombre del producto"
-              disabled={isUpdating || isDeleting}
-            />
-            {errors.name && (
-              <p className="text-red-400 text-xs mt-1">{errors.name.message}</p>
-            )}
-          </div>
+          {/* Nombre y Código */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-slate-200 mb-1">Nombre</label>
+              <input
+                type="text"
+                {...register('name', {
+                  required: 'Nombre obligatorio',
+                  minLength: {
+                    value: 2,
+                    message: 'El nombre debe tener al menos 2 caracteres'
+                  },
+                  maxLength: {
+                    value: 100,
+                    message: 'El nombre no puede exceder los 100 caracteres'
+                  }
+                })}
+                className={inputClass}
+                placeholder="Nombre del producto"
+                disabled={isUpdating || isDeleting}
+              />
+              {errors.name && (
+                <p className="text-red-400 text-xs mt-1">{errors.name.message}</p>
+              )}
+            </div>
 
-          {/* Código */}
-          <div>
-            <label className="block text-xs text-slate-200 mb-1">Código</label>
-            <input
-              type="text"
-              {...register('code', {
-                required: 'Código obligatorio',
-                minLength: {
-                  value: 1,
-                  message: 'El código debe tener al menos 1 carácter'
-                },
-                maxLength: {
-                  value: 20,
-                  message: 'El código no puede exceder los 20 caracteres'
-                }
-              })}
-              className={inputClass}
-              placeholder="Código del producto"
-              disabled={isUpdating || isDeleting}
-            />
-            {errors.code && (
-              <p className="text-red-400 text-xs mt-1">{errors.code.message}</p>
-            )}
+            <div>
+              <label className="block text-xs text-slate-200 mb-1">Código</label>
+              <input
+                type="text"
+                {...register('code', {
+                  required: 'Código obligatorio',
+                  minLength: {
+                    value: 1,
+                    message: 'El código debe tener al menos 1 carácter'
+                  },
+                  maxLength: {
+                    value: 20,
+                    message: 'El código no puede exceder los 20 caracteres'
+                  }
+                })}
+                className={inputClass}
+                placeholder="Código del producto"
+                disabled={isUpdating || isDeleting}
+              />
+              {errors.code && (
+                <p className="text-red-400 text-xs mt-1">{errors.code.message}</p>
+              )}
+            </div>
           </div>
 
           {/* Descripción */}
@@ -285,30 +290,54 @@ const EditDeleteProduct: React.FC<EditDeleteProductProps> = ({ id, onClose }) =>
             )}
           </div>
 
-          {/* Precio */}
-          <div>
-            <label className="block text-xs text-slate-200 mb-1">Precio</label>
-            <input
-              type="number"
-              step="0.01"
-              {...register('price', {
-                required: 'Precio obligatorio',
-                min: {
-                  value: 0.01,
-                  message: 'El precio debe ser mayor a 0'
-                },
-                max: {
-                  value: 999999.99,
-                  message: 'El precio no puede exceder 999999.99'
-                }
-              })}
-              className={inputClass}
-              placeholder="0.00"
-              disabled={isUpdating || isDeleting}
-            />
-            {errors.price && (
-              <p className="text-red-400 text-xs mt-1">{errors.price.message}</p>
-            )}
+          {/* Precio y Stock Mínimo */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-slate-200 mb-1">Precio</label>
+              <input
+                type="number"
+                step="0.01"
+                {...register('price', {
+                  required: 'Precio obligatorio',
+                  valueAsNumber: true,
+                  min: {
+                    value: 0.01,
+                    message: 'El precio debe ser mayor a 0'
+                  },
+                  max: {
+                    value: 999999.99,
+                    message: 'El precio no puede exceder 999999.99'
+                  }
+                })}
+                className={`${inputClass} appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                placeholder="0.00"
+                disabled={isUpdating || isDeleting}
+              />
+              {errors.price && (
+                <p className="text-red-400 text-xs mt-1">{errors.price.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs text-slate-200 mb-1">Stock Mínimo</label>
+              <input
+                type="number"
+                {...register('min_amount', {
+                  required: 'Stock mínimo obligatorio',
+                  valueAsNumber: true,
+                  min: {
+                    value: 0,
+                    message: 'Debe ser >= 0'
+                  }
+                })}
+                className={`${inputClass} appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                placeholder="Ej: 10"
+                disabled={isUpdating || isDeleting}
+              />
+              {errors.min_amount && (
+                <p className="text-red-400 text-xs mt-1">{errors.min_amount.message}</p>
+              )}
+            </div>
           </div>
 
           {/* Select de Categoría */}
@@ -317,7 +346,7 @@ const EditDeleteProduct: React.FC<EditDeleteProductProps> = ({ id, onClose }) =>
             <select
               {...register('category_id', {
                 required: 'Categoría obligatoria',
-                valueAsNumber: true, // Convierte automáticamente a number
+                valueAsNumber: true,
                 min: {
                   value: 1,
                   message: 'Debe seleccionar una categoría válida'
@@ -336,6 +365,19 @@ const EditDeleteProduct: React.FC<EditDeleteProductProps> = ({ id, onClose }) =>
             {errors.category_id && (
               <p className="text-red-400 text-xs mt-1">{errors.category_id.message}</p>
             )}
+          </div>
+
+          {/* Notificador */}
+          <div>
+            <label className="flex items-center space-x-2 text-xs text-slate-200">
+              <input
+                type="checkbox"
+                {...register('notifier')}
+                className="w-4 h-4 text-indigo-600 bg-slate-800 border-slate-700 rounded focus:ring-indigo-500 focus:ring-2"
+                disabled={isUpdating || isDeleting}
+              />
+              <span>Notificar cuando el stock sea menor al mínimo</span>
+            </label>
           </div>
 
           {/* Botones */}
@@ -364,6 +406,8 @@ const EditDeleteProduct: React.FC<EditDeleteProductProps> = ({ id, onClose }) =>
           <div className="grid grid-cols-2 gap-2 text-xs text-slate-400">
             <p>ID: {product?.id}</p>
             <p>Categoría: {product?.category.name}</p>
+            <p>Stock mínimo: {product?.min_amount}</p>
+            <p>Notificaciones: {product?.notifier ? 'Activadas' : 'Desactivadas'}</p>
           </div>
         </div>
       </div>

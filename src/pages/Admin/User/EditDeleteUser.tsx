@@ -72,6 +72,7 @@ const EditDeleteUser: React.FC<EditDeleteUserProps> = ({ id, onClose }) => {
       setValue('username', user.username);
       setValue('role_id', user.role.id);
       setValue('point_sales_ids', user.point_sales.map(ps => ps.id));
+      setValue('is_active', user.is_active);
     }
   }, [user, setValue]);
 
@@ -428,6 +429,22 @@ const EditDeleteUser: React.FC<EditDeleteUserProps> = ({ id, onClose }) => {
             )}
           </div>
 
+          {/* Estado activo */}
+          <div>
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                {...register('is_active')}
+                className="rounded border-slate-600 text-indigo-500 focus:ring-indigo-500"
+                disabled={isUpdating || isDeleting}
+              />
+              <span className="text-sm text-slate-200">Usuario activo</span>
+            </label>
+            <p className="text-xs text-slate-400 mt-1">
+              Los usuarios inactivos no podrán acceder al sistema
+            </p>
+          </div>
+
           {/* Puntos de venta */}
           <div>
             <label className="block text-xs text-slate-200 mb-2">Puntos de venta</label>
@@ -483,6 +500,7 @@ const EditDeleteUser: React.FC<EditDeleteUserProps> = ({ id, onClose }) => {
             <p>ID: {user?.id}</p>
             <p>Rol: {user?.role.name}</p>
             <p>Admin: {user?.is_admin ? 'Sí' : 'No'}</p>
+            <p>Estado: {user?.is_active ? 'Activo' : 'Inactivo'}</p>
             <p>Puntos de venta: {user?.point_sales.length || 0}</p>
           </div>
         </div>

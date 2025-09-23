@@ -1,19 +1,8 @@
-import apiClubNorte from "@/api/apiClubNorte";
+import SuccessMessage from "@/components/generic/SuccessMessage";
 import type { CategoryCreateData } from "@/hooks/admin/Category/categoryType";
+import { useCategoryMutations } from "@/hooks/admin/Category/useCategoryMutations";
 import { getApiError } from "@/utils/apiError";
-import useInvalidateQueries from "@/utils/useInvalidateQueries";
-import { useMutation } from "@tanstack/react-query";
 import { useForm } from 'react-hook-form';
-
-
-const postCategory = async (formData: CategoryCreateData) => {
-  const { data } = await apiClubNorte.post(
-    "/api/v1/category/create", // ajusta la URL según tu API
-    formData,
-    { withCredentials: true }
-  );
-  return data;
-};
 
 const FormCreateCategory = () => {
   const {
@@ -23,38 +12,53 @@ const FormCreateCategory = () => {
     reset
   } = useForm<CategoryCreateData>();
 
-  const invalidateQueries = useInvalidateQueries();
-
-  const { mutate, isPending, error: mutationError } = useMutation({
-    mutationFn: postCategory,
-    onSuccess: async (data) => {
-      alert("✅ Categoría creada con éxito");
-      await invalidateQueries(["getAllCategories"])
-      console.log("Categoría creada:", data);
-      reset();
-      // invalidateQueries(["getAllCategories"]) // si quieres refrescar lista
-    },
-    onError: (error) => {
-      const apiError = getApiError(error);
-      const errorMessage = apiError?.message || "Error desconocido";
-      console.error("Error al crear categoría:", errorMessage);
-      alert(`❌ ${errorMessage}`);
-    },
-  });
+  // Usar el hook centralizado de mutaciones
+  const { 
+    createCategory, 
+    isCreating, 
+    createError, 
+    isCreated,
+    resetCreateState 
+  } = useCategoryMutations();
 
   const onSubmit = (data: CategoryCreateData) => {
-    mutate(data);
+    createCategory(data, {
+      onSuccess: () => {
+        reset(); // Resetear formulario después del éxito
+      }
+    });
   };
 
   const inputClass = "w-full bg-slate-800 border border-slate-700 rounded-md py-1.5 px-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm";
 
-  // Procesar error de mutación para mostrar en UI
-  const mutationApiError = getApiError(mutationError);
+  // Obtener mensaje de error de la mutación
+  const mutationApiError = getApiError(createError);
+
+  // Si la categoría fue creada exitosamente, mostrar mensaje de éxito
+  if (isCreated) {
+    return (
+      <SuccessMessage
+        title="¡Categoría Creada!"
+        description="La categoría ha sido creada exitosamente y ya está disponible para asignar a productos."
+        primaryButton={{
+          text: "Crear Otra",
+          onClick: () => {
+            resetCreateState();
+            reset();
+          },
+          variant: 'indigo'
+        }}
+
+      />
+    );
+  }
 
   return (
     <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
       <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl p-6 w-full max-w-md mx-auto">
-        <h2 className="text-xl font-bold text-white mb-4 text-center">Crear Categoría</h2>
+        <h2 className="text-xl font-bold text-white mb-4 text-center">
+          Crear Categoría
+        </h2>
 
         {/* Mostrar error de mutación si existe */}
         {mutationApiError && (
@@ -84,20 +88,33 @@ const FormCreateCategory = () => {
               })}
               className={inputClass}
               placeholder="Nombre de la categoría"
-              disabled={isPending}
+              disabled={isCreating}
             />
             {errors.name && (
               <p className="text-red-400 text-xs mt-1">{errors.name.message}</p>
             )}
           </div>
 
-          <button 
-            type="submit" 
-            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-1.5 rounded-md text-sm transition disabled:opacity-50"
-            disabled={isPending}
-          >
-            {isPending ? "Creando..." : "Crear"}
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-1.5 rounded-md text-sm transition disabled:opacity-50"
+              disabled={isCreating}
+            >
+              {isCreating ? "Creando..." : "Crear"}
+            </button>
+
+            {/* Botón para limpiar estado si hay error */}
+            {createError && (
+              <button
+                type="button"
+                onClick={() => resetCreateState()}
+                className="px-3 bg-slate-600 hover:bg-slate-500 text-white font-medium py-1.5 rounded-md text-sm transition"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </form>
       </div>
     </div>

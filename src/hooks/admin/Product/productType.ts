@@ -5,6 +5,7 @@ interface StockPoint {
   name: string;
   stock: number;
 }
+
 interface StockDeposit {
   id: number;
   stock: number;
@@ -17,10 +18,11 @@ export interface Product {
   description: string;
   category: Category;
   price: number;
+  min_amount: number;
+  notifier: boolean;
   stock_point_sales: StockPoint[] | null;
   stock_deposit: StockDeposit;
 }
-
 
 // para crear un producto
 export interface ProductCreateData {
@@ -29,6 +31,8 @@ export interface ProductCreateData {
   description: string;
   name: string;
   price: number;
+  min_amount: number;
+  notifier: boolean;
 }
 
 // para actualizar un producto
@@ -38,4 +42,6 @@ export interface ProductUpdateData {
   description: string;
   name: string;
   price: number;
+  min_amount: number;
+  notifier: boolean;
 }
