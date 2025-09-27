@@ -2,7 +2,8 @@ import { useGetExistOpenRegister } from '@/hooks/admin/Register/useGetExistOpenR
 import { useRegisterMutations } from '@/hooks/admin/Register/useRegisterMutation';
 import { getApiError } from '@/utils/apiError';
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
+import { NumericFormat } from 'react-number-format';
 
 interface AmountForm {
   amount: number;
@@ -300,18 +301,27 @@ const RegisterPointSale = () => {
                   <label className="block text-slate-200 text-sm font-medium mb-2">
                     Monto inicial
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    {...openForm.register('amount', { 
+                  <Controller
+                    name="amount"
+                    control={openForm.control}
+                    rules={{ 
                       required: 'El monto es requerido',
-                      min: { value: 0, message: 'El monto debe ser mayor a 0' },
-                      valueAsNumber: true
-                    })}
-                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-lg"
-                    placeholder="0.00"
-                    autoFocus
+                      min: { value: 0, message: 'El monto debe ser mayor a 0' }
+                    }}
+                    render={({ field: { onChange, value } }) => (
+                      <NumericFormat
+                        value={value}
+                        onValueChange={(values) => onChange(values.floatValue)}
+                        thousandSeparator="."
+                        decimalSeparator=","
+                        prefix="$"
+                        decimalScale={0}
+                        allowNegative={false}
+                        className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-lg"
+                        placeholder="$0"
+                        autoFocus
+                      />
+                    )}
                   />
                   {openForm.formState.errors.amount && (
                     <p className="text-red-400 text-sm mt-1">
@@ -351,18 +361,27 @@ const RegisterPointSale = () => {
                   <label className="block text-slate-200 text-sm font-medium mb-2">
                     Monto final
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    {...closeForm.register('amount', { 
+                  <Controller
+                    name="amount"
+                    control={closeForm.control}
+                    rules={{ 
                       required: 'El monto es requerido',
-                      min: { value: 0, message: 'El monto debe ser mayor a 0' },
-                      valueAsNumber: true
-                    })}
-                    className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg"
-                    placeholder="0.00"
-                    autoFocus
+                      min: { value: 0, message: 'El monto debe ser mayor a 0' }
+                    }}
+                    render={({ field: { onChange, value } }) => (
+                      <NumericFormat
+                        value={value}
+                        onValueChange={(values) => onChange(values.floatValue)}
+                        thousandSeparator="."
+                        decimalSeparator=","
+                        prefix="$"
+                        decimalScale={0}
+                        allowNegative={false}
+                        className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-lg"
+                        placeholder="$0"
+                        autoFocus
+                      />
+                    )}
                   />
                   {closeForm.formState.errors.amount && (
                     <p className="text-red-400 text-sm mt-1">

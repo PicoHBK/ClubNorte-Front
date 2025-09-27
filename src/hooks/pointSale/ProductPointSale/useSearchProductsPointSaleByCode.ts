@@ -31,18 +31,25 @@ const searchProductsPointSaleByCode = async (
   return {
     status: response.data.status,
     message: response.data.message,
-    body: { 
-      products: response.data.body ? [response.data.body] : [] 
+    body: {
+      products: response.data.body ? [response.data.body] : []
     },
   };
 };
 
 // ---- Hook para React Query ----
+/**
+ * Hook para buscar productos de punto de venta por código usando react-query
+ * Configurado para pistola escáner - sin reintentos automáticos
+ */
 export const useSearchProductsPointSaleByCode = (code: string) => {
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["searchProductsPointSaleByCode", code],
     queryFn: () => searchProductsPointSaleByCode(code),
     enabled: !!code.trim(), // solo ejecuta si el código no está vacío
+    retry: false, // sin reintentos - para pistola escáner
+    refetchOnWindowFocus: false, // evita refetch innecesarios
+    refetchOnMount: false, // evita refetch al montar
   });
 
   const apiError = getApiError(error);

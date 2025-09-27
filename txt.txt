@@ -1,410 +1,482 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import { useForm, useFieldArray, useWatch, Controller } from 'react-hook-form';
-import { Search, X, Plus, Minus, Edit } from 'lucide-react';
-import type { Product } from '@/hooks/pointSale/ProductPointSale/useGetAllProductsPointSale';
-import ProductSearchInput from './ProductLogic/ProductSearchInput/ProductSearchInput';
-import { useIncomeMutations } from '@/hooks/pointSale/Income/useIncomeMutations';
-import { useGetIncomeById } from '@/hooks/pointSale/Income/useGetIncomeById';
-import type { IncomeUpdateData } from '@/hooks/pointSale/Income/incomeTypes';
-import SuccessMessage from "@/components/generic/SuccessMessage";
-import { getApiError } from "@/utils/apiError";
+import { useState, useEffect, type JSX, type ReactNode } from "react";
+import {
+  ChevronDown,
+  Settings,
+  User,
+  LogOut,
+  type LucideIcon,
+  DollarSign,
+  Menu,
+  X,
+  PlusCircle,
+  ListOrdered,
+  Package,
+  Boxes,
+  Wallet,
+  DoorOpen,
+  Grid,
+  PlusSquare,
+  Volleyball,
+} from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
+import TableProductPointSale from "./ProductPoinSale/TableProductPointSale";
+import usePointSaleStore from "@/store/usePointSaleStore";
+import RegisterPointSale from "./Register/RegisterPointSale";
+import IncomeCreate from "./Income/IncomeCreate";
+import TableIncomes from "./Income/TableIncomes";
+import FormCreateSportCourt from "./SportCourt/FromCreateSportCourt";
+import TableSportCourt from "./SportCourt/TableSportCourt";
+import IncomeSportCourtCreate from "./IncomeSportCourt/IncomeSportCourtCreate";
+import TableIncomesSportCourt from "./IncomeSportCourt/TableIncomesSportCourt";
 
-interface FormData extends IncomeUpdateData {
-  product_search: string; // Solo para el formulario, no se envía al backend
+// Definición de tipos para la configuración
+interface Action {
+  id: string;
+  name: string;
+  icon: LucideIcon;
+  component: () => JSX.Element;
 }
 
-interface Props {
-  incomeId: number;
+interface Model {
+  id: string;
+  name: string;
+  icon: LucideIcon;
+  color: string;
+  actions: Action[];
 }
 
-export default function FormEditIncome({ incomeId }: Props) {
-  const [selectedProducts, setSelectedProducts] = useState<Map<number, Product>>(new Map());
+interface Section {
+  id: string;
+  name: string;
+  models: Model[];
+}
 
-  // Hook para obtener los datos del ingreso
-  const { income, isLoading: isLoadingIncome, error: incomeError } = useGetIncomeById(incomeId);
+interface MenuButtonProps {
+  onClick: () => void;
+  children: ReactNode;
+  active?: boolean;
+  className?: string;
+}
 
-  // Hook de mutaciones
-  const { 
-    updateIncome, 
-    isUpdating, 
-    updateError, 
-    isUpdated,
-    resetUpdateState 
-  } = useIncomeMutations();
+const PointSale = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
-  // Form setup
-  const { register, control, handleSubmit, setValue, setError, clearErrors, reset } = useForm<FormData>({
-    defaultValues: {
-      id: incomeId,
-      description: '',
-      items: [],
-      payment_method: 'efectivo',
-      product_search: ''
-    }
-  });
+  const {
+    login,
+    logout,
+    isAuthenticated,
+    isLoading,
+    error,
+  } = usePointSaleStore();
 
-  const { fields, append, remove, replace } = useFieldArray({
-    control,
-    name: 'items'
-  });
-
-  const watchedItems = useWatch({
-    control,
-    name: 'items',
-    defaultValue: []
-  });
-
-  // Cargar datos del ingreso cuando se obtengan
+  // Login automático cuando hay un ID en los params
   useEffect(() => {
-    if (income) {
-      // Crear mapa de productos seleccionados
-      const productsMap = new Map<number, Product>();
-      const items = income.items.map(item => {
-        const product: Product = {
-          id: item.product.id,
-          code: item.product.code,
-          name: item.product.name,
-          price: item.product.price,
-          stock: item.product.price, // Nota: necesitarías el stock real del producto
-          category: { id: 0, name: '' } // Valor por defecto corregido
-        };
-        productsMap.set(product.id, product);
-        return {
-          product_id: item.product.id,
-          quantity: item.quantity
-        };
-      });
-
-      setSelectedProducts(productsMap);
-      
-      // Resetear formulario con datos cargados
-      reset({
-        id: income.id,
-        description: income.description,
-        items: items,
-        payment_method: income.payment_method,
-        product_search: ''
-      });
-
-      // Reemplazar items del formulario
-      replace(items);
+    if (id) {
+      login(Number(id), ""); // <-- password vacío si no se necesita
     }
-  }, [income, reset, replace]);
+  }, [id, login]);
 
-  // Calcular total
-  const total = useMemo(() => {
-    return watchedItems.reduce((sum, item) => {
-      const product = selectedProducts.get(item.product_id);
-      return sum + (product ? product.price * (item.quantity || 0) : 0);
-    }, 0);
-  }, [watchedItems, selectedProducts]);
+  const config: { sections: Section[] } = {
+  sections: [
+    {
+      id: "Ingreso",
+      name: "Ingreso",
+      models: [
+        {
+          id: "income",
+          name: "Ingreso",
+          icon: DollarSign,
+          color: "text-green-500",
+          actions: [
+            {
+              id: "crear-ingreso",
+              name: "Crear Ingreso",
+              icon: PlusCircle,
+              component: IncomeCreate,
+            },
+            {
+              id: "list-ingreso",
+              name: "Lista de Ingresos",
+              icon: ListOrdered,
+              component: TableIncomes,
+            },
+            {
+              id: "crear-ingreso-cancha",
+              name: "Crear Ingreso Cancha",
+              icon: PlusCircle,
+              component: IncomeSportCourtCreate,
+            },
+            {
+              id: "list-ingreso-cancha",
+              name: "Lista de Ingresos Cancha",
+              icon: ListOrdered,
+              component: TableIncomesSportCourt,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: "Productos",
+      name: "Gestión de Productos",
+      models: [
+        {
+          id: "productos",
+          name: "Productos",
+          icon: Package,
+          color: "text-blue-500",
+          actions: [
+            {
+              id: "listar",
+              name: "Listar Productos",
+              icon: Boxes,
+              component: TableProductPointSale,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: "Caja",
+      name: "Caja e Informes",
+      models: [
+        {
+          id: "caja",
+          name: "Caja",
+          icon: Wallet,
+          color: "text-purple-500",
+          actions: [
+            {
+              id: "abrir-cerrar",
+              name: "Abrir / Cerrar Caja",
+              icon: DoorOpen,
+              component: RegisterPointSale,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: "canchas",
+      name: "Canchas",
+      models: [
+        {
+          id: "canchas",
+          name: "Canchas",
+          icon: Volleyball,
+          color: "text-orange-500",
+          actions: [
+            {
+              id: "crear-cancha",
+              name: "Crear Cancha",
+              icon: PlusSquare,
+              component: FormCreateSportCourt,
+            },
+            {
+              id: "listar-cancha",
+              name: "Lista de Canchas",
+              icon: Grid,
+              component: TableSportCourt,
+            },
+          ],
+        },
+      ],
+    },
+  ],
+}
 
-  // Agregar producto
-  const addProduct = useCallback((product: Product) => {
-    if (product.stock <= 0) {
-      alert('Este producto no tiene stock disponible');
-      return;
-    }
 
-    const existingIndex = fields.findIndex(field => field.product_id === product.id);
-    
-    setSelectedProducts(prev => new Map(prev).set(product.id, product));
-    
-    if (existingIndex >= 0) {
-      const currentQuantity = watchedItems[existingIndex]?.quantity || 0;
-      const newQuantity = currentQuantity + 1;
-      
-      if (newQuantity > product.stock) {
-        alert(`No puedes agregar más unidades. Stock disponible: ${product.stock}`);
-        return;
+  const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [disclosuresOpen, setDisclosuresOpen] = useState<
+    Record<string, boolean>
+  >({});
+
+  // Todas las acciones aplanadas
+  const allActions = config.sections.flatMap((s) =>
+    s.models.flatMap((m) =>
+      m.actions.map((a) => ({ ...a, modelName: m.name, sectionName: s.name }))
+    )
+  );
+
+  const selectedAction = allActions.find((a) => a.id === selectedActionId);
+
+  useEffect(() => {
+    if (allActions.length > 0) {
+      setSelectedActionId(allActions[0].id);
+      // Abrir el primer disclosure por defecto
+      const firstModelId = config.sections[0]?.models[0]?.id;
+      if (firstModelId) {
+        setDisclosuresOpen({ [firstModelId]: true });
       }
-      
-      setValue(`items.${existingIndex}.quantity`, newQuantity);
-      clearErrors(`items.${existingIndex}.quantity`);
-    } else {
-      append({ product_id: product.id, quantity: 1 });
     }
-  }, [fields, watchedItems, setValue, append, clearErrors]);
+  }, []);
 
-  // Cambiar cantidad
-  const updateQuantity = useCallback((index: number, delta: number) => {
-    const currentQuantity = watchedItems[index]?.quantity || 0;
-    const newQuantity = Math.max(1, currentQuantity + delta);
-    const productId = fields[index]?.product_id;
-    const product = selectedProducts.get(productId);
-    
-    if (product && newQuantity > product.stock) {
-      alert(`Stock máximo: ${product.stock}`);
-      return;
-    }
-    
-    setValue(`items.${index}.quantity`, newQuantity);
-    clearErrors(`items.${index}.quantity`);
-  }, [watchedItems, fields, selectedProducts, setValue, clearErrors]);
+  const toggleDisclosure = (modelId: string) => {
+    setDisclosuresOpen((prev) => ({
+      ...prev,
+      [modelId]: !prev[modelId],
+    }));
+  };
 
-  // Remover producto
-  const removeProduct = useCallback((index: number, productId: number) => {
-    setSelectedProducts(prev => {
-      const newMap = new Map(prev);
-      newMap.delete(productId);
-      return newMap;
-    });
-    remove(index);
-  }, [remove]);
+  const handleActionSelect = (actionId: string) => {
+    setSelectedActionId(actionId);
+    setSidebarOpen(false);
+  };
 
-  // Submit
-  const onSubmit = useCallback((data: FormData) => {
-    let hasStockErrors = false;
-    
-    data.items.forEach((item, index) => {
-      const product = selectedProducts.get(item.product_id);
-      if (product && item.quantity > product.stock) {
-        setError(`items.${index}.quantity`, {
-          type: 'manual',
-          message: `Stock máximo: ${product.stock}`
-        });
-        hasStockErrors = true;
-      }
-    });
+  // Botón reutilizable para el menú
+  const MenuButton = ({
+    onClick,
+    children,
+    active = false,
+    className = "",
+  }: MenuButtonProps) => (
+    <button
+      onClick={onClick}
+      className={`flex items-center w-full px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 ${
+        active
+          ? "bg-indigo-600 text-white shadow-lg scale-105"
+          : "text-slate-300 hover:bg-white/10 hover:text-white hover:scale-102"
+      } ${className}`}
+    >
+      {children}
+    </button>
+  );
 
-    if (hasStockErrors) {
-      alert('Por favor corrige los errores de stock antes de continuar');
-      return;
-    }
+  // Manejo del botón "Salir"
+  const handleLogout = async () => {
+    await logout();
+    navigate("/admin"); // Redirige a /admin
+  };
 
-    const { product_search, ...submitData } = data;
-    updateIncome(submitData);
-  }, [selectedProducts, setError, updateIncome]);
-
-  // Obtener mensaje de error de la mutación
-  const mutationApiError = getApiError(updateError);
-  const incomeApiError = getApiError(incomeError);
-
-  // Loading state
-  if (isLoadingIncome) {
+  // Si está cargando el login automático
+  if (isLoading) {
     return (
-      <div className="p-4 flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto mb-2"></div>
-          <p className="text-slate-300 text-sm">Cargando...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-600 border-t-transparent mx-auto mb-4"></div>
+          <p className="text-white text-lg">Cargando...</p>
         </div>
       </div>
     );
   }
 
-  // Error loading income
-  if (incomeError) {
+  // Si ocurre error en el login
+  if (error) {
     return (
-      <div className="p-4 text-center">
-        <div className="text-red-400 mb-2">Error al cargar</div>
-        <p className="text-slate-300 text-sm">{incomeApiError?.message || 'Error desconocido'}</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
+        <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-8 max-w-md w-full text-center shadow-2xl">
+          <div className="bg-red-500/20 rounded-full p-4 w-16 h-16 mx-auto mb-4">
+            <X className="w-8 h-8 text-red-400" />
+          </div>
+          <p className="mb-6 text-red-300 text-lg">{error}</p>
+          <button
+            onClick={() => navigate("/admin")}
+            className="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl hover:scale-105 transition-all duration-300 font-medium shadow-lg"
+          >
+            Volver al Admin
+          </button>
+        </div>
       </div>
     );
   }
 
-  // Si el ingreso fue actualizado exitosamente, mostrar mensaje de éxito
-  if (isUpdated) {
+  // Si no está autenticado después del intento
+  if (!isAuthenticated) {
     return (
-      <SuccessMessage
-        title="¡Actualizado!"
-        description="Ingreso actualizado exitosamente."
-        primaryButton={{
-          text: "Continuar",
-          onClick: resetUpdateState,
-          variant: 'indigo'
-        }}
-      />
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
+        <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-8 max-w-md w-full text-center shadow-2xl">
+          <div className="bg-yellow-500/20 rounded-full p-4 w-16 h-16 mx-auto mb-4">
+            <User className="w-8 h-8 text-yellow-400" />
+          </div>
+          <p className="mb-6 text-white">No se pudo iniciar sesión en el punto de venta.</p>
+          <button
+            onClick={() => navigate("/admin")}
+            className="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl hover:scale-105 transition-all duration-300 font-medium shadow-lg"
+          >
+            Volver al Admin
+          </button>
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="p-4 space-y-4">
-      
-      {/* Header compacto */}
-      <div className="flex items-center gap-2 pb-2 border-b border-slate-700">
-        <Edit className="w-4 h-4 text-indigo-400" />
-        <h3 className="text-lg font-semibold text-white">Editar Ingreso #{incomeId}</h3>
-      </div>
+    <div className="flex min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      {/* Botón de menú para móvil y tablet */}
+      <button
+        className="lg:hidden fixed top-4 left-4 z-50 p-3 rounded-xl bg-white/10 backdrop-blur-lg text-white border border-white/20 hover:bg-white/20 transition-all duration-300 shadow-2xl"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+      >
+        {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+      </button>
 
-      {/* Error de mutación */}
-      {mutationApiError && (
-        <div className="bg-red-500/20 border border-red-500/50 rounded p-2">
-          <p className="text-red-400 text-sm text-center">{mutationApiError.message}</p>
-        </div>
+      {/* Overlay para móvil y tablet */}
+      {sidebarOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-30 transition-all duration-300"
+          onClick={() => setSidebarOpen(false)}
+        />
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        
-        {/* Descripción */}
-        <div>
-          <label className="block text-sm text-slate-300 mb-1">Descripción</label>
-          <textarea
-            {...register('description')}
-            disabled={isUpdating}
-            className="w-full px-3 py-2 bg-slate-800 text-white border border-slate-700 rounded text-sm focus:ring-1 focus:ring-indigo-500 resize-none disabled:opacity-50"
-            placeholder="Descripción del ingreso..."
-            rows={2}
-          />
+      {/* Sidebar */}
+      <div
+        className={`${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } 
+        lg:translate-x-0 transform fixed lg:static inset-y-0 left-0 z-40 w-80 bg-white/10 backdrop-blur-lg border-r border-white/20 text-slate-300 flex flex-col transition-all duration-300 ease-in-out shadow-2xl`}
+      >
+        {/* Header del sidebar */}
+        <div className="p-6 border-b border-white/20">
+          <h1 className="text-2xl font-bold text-white mb-2 bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-600 bg-clip-text">
+            Panel de Control
+          </h1>
+          <p className="text-sm text-slate-300">Gestión de punto de venta</p>
         </div>
 
-        {/* Método de pago */}
-        <div>
-          <label className="block text-sm text-slate-300 mb-1">Método de pago</label>
-          <div className="flex gap-2">
-            {[
-              { value: 'efectivo', label: 'Efectivo' },
-              { value: 'tarjeta', label: 'Tarjeta' },
-              { value: 'transferencia', label: 'Transferencia' }
-            ].map(({ value, label }) => (
-              <label key={value} className="flex-1 cursor-pointer">
-                <input
-                  type="radio"
-                  {...register('payment_method')}
-                  value={value}
-                  className="sr-only peer"
-                  disabled={isUpdating}
-                />
-                <div className="py-2 px-3 bg-slate-800 border border-slate-700 rounded text-center text-sm peer-checked:bg-indigo-600 peer-checked:border-indigo-500 text-slate-300 peer-checked:text-white hover:bg-slate-700 transition-all">
-                  {label}
-                </div>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Buscador de productos */}
-        <div>
-          <label className="block text-sm text-slate-300 mb-1">Agregar productos</label>
-          <Controller
-            name="product_search"
-            control={control}
-            render={({ field }) => (
-              <ProductSearchInput
-                value={field.value}
-                onChange={field.onChange}
-                onProductSelect={addProduct}
-                selectedProducts={Array.from(selectedProducts.values())}
-                placeholder="Buscar productos..."
-                disabled={isUpdating}
-              />
-            )}
-          />
-        </div>
-
-        {/* Lista de productos */}
-        <div>
-          <label className="block text-sm text-slate-300 mb-1">Productos ({fields.length})</label>
-          
-          <div className="bg-slate-800 border border-slate-700 rounded max-h-60 overflow-y-auto">
-            {fields.length === 0 ? (
-              <div className="text-center py-6 text-slate-400">
-                <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No hay productos</p>
+        {/* Navegación */}
+        <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
+          {config.sections.map((section) => (
+            <div key={section.id} className="space-y-3">
+              <div className="flex items-center px-2">
+                <div className="h-px bg-gradient-to-r from-indigo-500/50 via-purple-500/30 to-emerald-500/50 flex-1"></div>
+                <h2 className="px-3 text-xs font-semibold text-slate-200 uppercase tracking-wider">
+                  {section.name}
+                </h2>
+                <div className="h-px bg-gradient-to-r from-emerald-500/50 via-purple-500/30 to-indigo-500/50 flex-1"></div>
               </div>
-            ) : (
-              <div className="divide-y divide-slate-700">
-                {fields.map((field, index) => {
-                  const product = selectedProducts.get(field.product_id);
-                  const quantity = watchedItems[index]?.quantity || 0;
-                  const subtotal = (product?.price || 0) * quantity;
 
-                  return (
-                    <div key={field.id} className="p-3 hover:bg-slate-700/30">
-                      
-                      {/* Fila 1: Producto y precio */}
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-white text-sm truncate">
-                            {product?.name || 'Producto no encontrado'}
-                          </div>
-                          <div className="text-xs text-slate-400">
-                            Stock: {product?.stock || 0} • ${product?.price?.toFixed(2) || '0.00'}
-                          </div>
-                        </div>
-                        <div className="text-emerald-400 font-semibold ml-2">
-                          ${subtotal.toFixed(2)}
-                        </div>
+              {section.models.map((model) => (
+                <div key={model.id} className="space-y-2">
+                  <MenuButton
+                    onClick={() => toggleDisclosure(model.id)}
+                    active={selectedAction?.modelName === model.name}
+                    className="justify-between group"
+                  >
+                    <div className="flex items-center">
+                      <div className="p-2 rounded-lg bg-white/10 mr-3 group-hover:scale-110 transition-transform">
+                        <model.icon
+                          className={`h-5 w-5 ${model.color || "text-slate-400"}`}
+                        />
                       </div>
-
-                      {/* Fila 2: Controles de cantidad */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => updateQuantity(index, -1)}
-                            disabled={quantity <= 1 || isUpdating}
-                            className="w-7 h-7 rounded bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:opacity-50 flex items-center justify-center text-white transition-colors"
-                          >
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          
-                          <input
-                            type="number"
-                            min="1"
-                            max={product?.stock || 999}
-                            {...register(`items.${index}.quantity`, { 
-                              valueAsNumber: true,
-                              min: 1,
-                              max: product?.stock || 999,
-                              onChange: (e) => {
-                                const newQuantity = parseInt(e.target.value) || 1;
-                                if (product && newQuantity > product.stock) {
-                                  setValue(`items.${index}.quantity`, product.stock);
-                                }
-                              }
-                            })}
-                            disabled={isUpdating}
-                            className="w-12 h-7 px-2 bg-slate-700 text-white text-center border border-slate-600 rounded text-sm focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
-                          />
-                          
-                          <button
-                            type="button"
-                            onClick={() => updateQuantity(index, 1)}
-                            disabled={quantity >= (product?.stock || 0) || isUpdating}
-                            className="w-7 h-7 rounded bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:opacity-50 flex items-center justify-center text-white transition-colors"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => removeProduct(index, field.product_id)}
-                          disabled={isUpdating}
-                          className="w-7 h-7 rounded bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300 flex items-center justify-center transition-colors disabled:opacity-50"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
+                      <span className="font-medium">{model.name}</span>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
+                    <ChevronDown
+                      className={`h-5 w-5 transition-transform duration-300 ${
+                        disclosuresOpen[model.id] ? "rotate-180" : ""
+                      }`}
+                    />
+                  </MenuButton>
 
-        {/* Total y botón */}
-        <div className="pt-2 border-t border-slate-700">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-slate-300 text-sm">Total:</div>
-            <div className="text-xl font-bold text-emerald-400">${total.toFixed(2)}</div>
-          </div>
-          
-          <button
-            type="submit"
-            disabled={fields.length === 0 || isUpdating}
-            className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-medium rounded transition-all text-sm"
-          >
-            {isUpdating 
-              ? 'Actualizando...' 
-              : fields.length === 0 
-                ? 'Agrega productos' 
-                : 'Actualizar Ingreso'
-            }
-          </button>
+                  {disclosuresOpen[model.id] && (
+                    <div className="ml-4 pl-4 border-l-2 border-white/20 space-y-1 animate-fadeIn">
+                      {model.actions.map((action) => (
+                        <MenuButton
+                          key={action.id}
+                          onClick={() => handleActionSelect(action.id)}
+                          active={selectedActionId === action.id}
+                          className="text-sm group"
+                        >
+                          <div className="flex items-center">
+                            <div className="p-1.5 rounded-md bg-white/5 mr-3 group-hover:scale-110 transition-transform">
+                              <action.icon className="h-4 w-4" />
+                            </div>
+                            {action.name}
+                          </div>
+                        </MenuButton>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
+        </nav>
+
+        {/* Footer del sidebar */}
+        <div className="p-4 border-t border-white/20 space-y-2">
+          <MenuButton onClick={() => {}} className="group">
+            <div className="p-2 rounded-lg bg-white/10 mr-3 group-hover:scale-110 transition-transform">
+              <Settings className="h-5 w-5 text-slate-400" />
+            </div>
+            <span>Configuración</span>
+          </MenuButton>
+
+          <MenuButton onClick={handleLogout} className="group hover:bg-red-500/20">
+            <div className="p-2 rounded-lg bg-red-500/20 mr-3 group-hover:scale-110 transition-transform">
+              <LogOut className="h-5 w-5 text-red-400" />
+            </div>
+            <span>Salir</span>
+          </MenuButton>
         </div>
-      </form>
+      </div>
+
+      {/* Contenido principal */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <header className="bg-white/10 backdrop-blur-lg border-b border-white/20 shadow-xl">
+          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+            <div className="flex items-center justify-between">
+              <div className="min-w-0 flex-1">
+                <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white truncate">
+                  {selectedAction
+                    ? `${selectedAction.sectionName} > ${selectedAction.modelName}`
+                    : "Panel de Control"}
+                </h2>
+                {selectedAction && (
+                  <p className="text-sm text-slate-300 mt-1">
+                    {selectedAction.name}
+                  </p>
+                )}
+              </div>
+              <div className="ml-4 hidden sm:block">
+                <div className="flex items-center space-x-2">
+                  <div className="h-2 w-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-sm text-slate-300">En línea</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Panel de contenido */}
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          {selectedAction ? (
+            <div className="h-full">
+              <div className="h-full bg-white/5 backdrop-blur-sm border border-white/20 rounded-2xl shadow-2xl overflow-hidden">
+                <div className="h-full p-4 sm:p-6 lg:p-8">
+                  <selectedAction.component />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center max-w-md mx-auto">
+                <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-2xl">
+                  <div className="bg-gradient-to-r from-indigo-500/20 via-purple-500/10 to-emerald-500/20 rounded-full p-6 w-24 h-24 mx-auto mb-6">
+                    <User className="h-12 w-12 text-slate-300 mx-auto" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-2">
+                    Bienvenido al Panel
+                  </h3>
+                  <p className="text-slate-300 mb-4">
+                    Selecciona una acción del menú lateral para comenzar
+                  </p>
+                  <button
+                    onClick={() => setSidebarOpen(true)}
+                    className="lg:hidden px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl hover:scale-105 transition-all duration-300 font-medium shadow-lg"
+                  >
+                    Abrir Menú
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
-}
+};
+
+export default PointSale;

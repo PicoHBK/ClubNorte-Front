@@ -14,7 +14,7 @@ interface ApiSuccessResponse<T> {
 const QUERIES_TO_INVALIDATE = [
   "getAllRegisters",
   "RegisterGetById",
-  "RegistersGetByDate",
+  "RegisterInfoByDate",
   "existOpenRegister"
 ];
 

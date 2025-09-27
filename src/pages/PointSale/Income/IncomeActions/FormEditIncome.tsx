@@ -2,13 +2,13 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useForm, useFieldArray, useWatch, Controller } from 'react-hook-form';
 import { Edit, AlertCircle } from 'lucide-react';
 import type { Product } from '@/hooks/pointSale/ProductPointSale/useGetAllProductsPointSale';
-import ProductSearchInput from './ProductLogic/ProductSearchInput/ProductSearchInput';
+import ProductSearchInput from '../ProductLogic/ProductSearchInput/ProductSearchInput';
 import { useIncomeMutations } from '@/hooks/pointSale/Income/useIncomeMutations';
 import { useGetIncomeById } from '@/hooks/pointSale/Income/useGetIncomeById';
 import type { IncomeUpdateData } from '@/hooks/pointSale/Income/incomeTypes';
 import SuccessMessage from "@/components/generic/SuccessMessage";
 import { getApiError } from "@/utils/apiError";
-import SelectedProductsListEdit from './ProductLogic/ProductSelected/SelectedProductsListEdit';
+import SelectedProductsListEdit from '../ProductLogic/ProductSelected/SelectedProductsListEdit';
 
 interface FormData extends IncomeUpdateData {
   product_search: string; // Solo para el formulario, no se envía al backend

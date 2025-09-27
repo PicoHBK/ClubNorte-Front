@@ -1,23 +1,23 @@
 import React from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { IncomeCard } from "./IncomeCard"
+import SportCourtDetailCard from "./SportCourtDetailCard"
 import useUserStore from "@/store/useUserStore"
-import FormEditIncome from "./FormEditIncome"
-import DeleteIncomeComponent from "./DeleteIncomeComponent"
+import FormEditSportCourt from "./FormEditSportCourt"
+import DeleteSportCourtComponent from "./DeleteSportCourtComponent"
 
-type IncomeActionsProps = {
+type SportCourtActionsProps = {
   id: number
-  incomeName?: string // Opcional: para mostrar en la confirmación de eliminación
+  sportCourtName?: string // Opcional: para mostrar en la confirmación de eliminación
   onDeleteSuccess?: () => void // Opcional: callback cuando se elimina exitosamente
 }
 
-const IncomeActions: React.FC<IncomeActionsProps> = ({
+const SportCourtActions: React.FC<SportCourtActionsProps> = ({
   id,
-  incomeName,
+  sportCourtName,
   onDeleteSuccess
 }) => {
   const { isUserAdmin, getUserRole } = useUserStore()
-  
+
   // Chequeo de permisos
   const canEdit = isUserAdmin() || getUserRole() === "admin"
 
@@ -55,22 +55,22 @@ const IncomeActions: React.FC<IncomeActionsProps> = ({
           </TabsList>
 
           <TabsContent value="detalle">
-            <IncomeCard id={id} />
+            <SportCourtDetailCard id={id} />
           </TabsContent>
 
           {canEdit && (
             <TabsContent value="editar">
-              <FormEditIncome incomeId={id} />
+              <FormEditSportCourt sportCourtId={id} />
             </TabsContent>
           )}
 
           {canEdit && (
             <TabsContent value="eliminar">
-              <DeleteIncomeComponent
-                incomeId={id} // Ya no necesita toString(), pasamos number directamente
-                incomeName={incomeName}
+             <DeleteSportCourtComponent 
+                sportCourtId={id}
+                sportCourtName={sportCourtName}
                 onDeleteSuccess={onDeleteSuccess}
-              />
+                />
             </TabsContent>
           )}
         </Tabs>
@@ -79,4 +79,4 @@ const IncomeActions: React.FC<IncomeActionsProps> = ({
   )
 }
 
-export default IncomeActions
+export default SportCourtActions

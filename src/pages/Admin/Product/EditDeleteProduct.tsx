@@ -213,7 +213,13 @@ const EditDeleteProduct: React.FC<EditDeleteProductProps> = ({ id, onClose }) =>
           </div>
         )}
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} 
+        onKeyDown={(e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+    }
+  }} 
+        className="space-y-4">
           {/* Nombre y Código */}
           <div className="grid grid-cols-2 gap-3">
             <div>

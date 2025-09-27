@@ -39,12 +39,16 @@ const searchProductsByCode = async (code: string): Promise<ApiSuccessResponseSin
 
 /**
  * Hook para buscar productos por código usando react-query
+ * Configurado para pistola escáner - sin reintentos automáticos
  */
 export const useSearchProductsByCode = (code: string) => {
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["searchProductsByCode", code],
     queryFn: () => searchProductsByCode(code),
     enabled: !!code.trim(), // solo ejecuta si hay texto
+    retry: false, // sin reintentos - para pistola escáner
+    refetchOnWindowFocus: false, // evita refetch innecesarios
+    refetchOnMount: false, // evita refetch al montar
   });
 
   const apiError = getApiError(error);

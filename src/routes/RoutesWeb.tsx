@@ -1,9 +1,9 @@
 import Footer from "@/components/headfoot/Footer";
 import Header from "@/components/headfoot/Header";
 import Admin from "@/pages/Admin/Admin";
-import ChangePassword from "@/pages/ChangePassword";
-import Home from "@/pages/Home";
-import PointSale from "@/pages/PointSale/PointSale";
+import ChangePassword from "@/pages/ChangePassword/ChangePassword";
+import Home from "@/pages/Home/Home";
+import PointSale from "@/pages/PointSale/PointSaleCore/PointSale";
 import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 
 const Layout = () => (

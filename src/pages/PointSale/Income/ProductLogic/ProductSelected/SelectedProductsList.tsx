@@ -1,12 +1,7 @@
 import { Search, X, Edit3 } from 'lucide-react';
 import { type UseFormRegister, type FieldArrayWithId } from 'react-hook-form';
-import { useState, useRef, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { useState } from 'react';
+import QuantityEditModal from './QuantityEditModal';
 import type { Product } from '@/hooks/pointSale/ProductPointSale/useGetAllProductsPointSale';
 import type { IncomeCreateData } from '@/hooks/pointSale/Income/incomeTypes';
 
@@ -24,6 +19,12 @@ interface SelectedProductsListProps {
   isCreating: boolean;
 }
 
+interface SelectedItem {
+  index: number;
+  product: Product;
+  currentQuantity: number;
+}
+
 export default function SelectedProductsList({
   fields,
   selectedProducts,
@@ -33,65 +34,19 @@ export default function SelectedProductsList({
   register,
   isCreating
 }: SelectedProductsListProps) {
-  const [selectedItem, setSelectedItem] = useState<{
-    index: number;
-    product: Product;
-    currentQuantity: number;
-  } | null>(null);
-  const [tempQuantity, setTempQuantity] = useState<string>('');
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
 
   const openQuantityDialog = (index: number, product: Product, currentQuantity: number) => {
     setSelectedItem({ index, product, currentQuantity });
-    setTempQuantity(currentQuantity.toString());
   };
 
   const closeDialog = () => {
     setSelectedItem(null);
-    setTempQuantity('');
   };
 
-  const handleQuantityChange = () => {
-    if (!selectedItem) return;
-    
-    const newQuantity = parseInt(tempQuantity) || 1;
-    const maxStock = selectedItem.product.stock || 999;
-    
-    // Validar stock antes de continuar
-    if (newQuantity > maxStock) {
-      // Mostrar advertencia pero no cerrar el modal
-      return;
-    }
-    
-    const finalQuantity = Math.max(1, Math.min(newQuantity, maxStock));
-    const delta = finalQuantity - selectedItem.currentQuantity;
-    updateQuantity(selectedItem.index, delta);
-    
-    closeDialog();
+  const handleQuantityConfirm = (index: number, delta: number) => {
+    updateQuantity(index, delta);
   };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      
-      const currentValue = parseInt(tempQuantity) || 0;
-      const maxStock = selectedItem?.product.stock || 999;
-      const hasError = currentValue > maxStock || currentValue < 1;
-      
-      if (!hasError) {
-        handleQuantityChange();
-      }
-      // Si hay error, no hace nada (se mantiene el modal abierto)
-    }
-  };
-
-  // Auto-focus input when dialog opens
-  useEffect(() => {
-    if (selectedItem && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [selectedItem]);
 
   if (fields.length === 0) {
     return (
@@ -115,6 +70,7 @@ export default function SelectedProductsList({
             const product = selectedProducts.get(field.product_id);
             const quantity = watchedItems[index]?.quantity || 0;
             const subtotal = (product?.price || 0) * quantity;
+            const isLastItem = index === fields.length - 1;
 
             return (
               <div key={field.id} className="group relative">
@@ -128,9 +84,13 @@ export default function SelectedProductsList({
                   })}
                 />
                 
-                {/* Card clickeable */}
+                {/* Card clickeable con resaltado para último item */}
                 <div 
-                  className="px-4 py-4 hover:bg-slate-700/20 transition-colors cursor-pointer"
+                  className={`px-4 py-4 transition-colors cursor-pointer ${
+                    isLastItem 
+                      ? 'bg-indigo-900/30 border-l-4 border-indigo-500 hover:bg-indigo-800/40' 
+                      : 'hover:bg-slate-700/20'
+                  }`}
                   onClick={() => {
                     if (product) {
                       openQuantityDialog(index, product, quantity);
@@ -182,9 +142,13 @@ export default function SelectedProductsList({
                   </div>
                 </div>
 
-                {/* Indicador visual */}
+                {/* Indicador visual mejorado */}
                 <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none">
-                  <div className="w-1 h-8 bg-slate-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className={`w-1 h-8 rounded-full transition-opacity ${
+                    isLastItem 
+                      ? 'bg-indigo-500 opacity-100' 
+                      : 'bg-slate-600 opacity-0 group-hover:opacity-100'
+                  }`} />
                 </div>
               </div>
             );
@@ -208,11 +172,16 @@ export default function SelectedProductsList({
                   const product = selectedProducts.get(field.product_id);
                   const quantity = watchedItems[index]?.quantity || 0;
                   const subtotal = (product?.price || 0) * quantity;
+                  const isLastItem = index === fields.length - 1;
 
                   return (
                     <tr 
                       key={field.id}
-                      className="hover:bg-slate-700/20 transition-colors cursor-pointer group"
+                      className={`transition-colors cursor-pointer group ${
+                        isLastItem 
+                          ? 'bg-indigo-900/20 hover:bg-indigo-800/30 border-l-4 border-indigo-500' 
+                          : 'hover:bg-slate-700/20'
+                      }`}
                       onClick={() => {
                         if (product) {
                           openQuantityDialog(index, product, quantity);
@@ -278,109 +247,12 @@ export default function SelectedProductsList({
         </div>
       </div>
 
-      {/* Dialog para cambiar cantidad */}
-      <Dialog open={!!selectedItem} onOpenChange={() => closeDialog()}>
-        <DialogContent className="sm:max-w-md bg-slate-800 border-slate-700">
-          <DialogHeader>
-            <DialogTitle className="text-white">
-              Cambiar cantidad
-            </DialogTitle>
-          </DialogHeader>
-          
-          {selectedItem && (() => {
-            const currentValue = parseInt(tempQuantity) || 0;
-            const maxStock = selectedItem.product.stock || 999;
-            const isOverStock = currentValue > maxStock;
-            const isUnderMin = currentValue < 1;
-            const hasError = isOverStock || isUnderMin;
-
-            return (
-              <div className="space-y-4">
-                {/* Info del producto */}
-                <div className="bg-slate-700/30 rounded-lg p-3">
-                  <h4 className="font-medium text-white text-sm truncate">
-                    {selectedItem.product.name}
-                  </h4>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Stock disponible: {selectedItem.product.stock || 0}
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    Precio: ${selectedItem.product.price?.toFixed(2) || '0.00'}
-                  </p>
-                </div>
-
-                {/* Input cantidad */}
-                <div className="space-y-2">
-                  <label className="text-sm text-slate-300 block">
-                    Nueva cantidad:
-                  </label>
-                  <input
-                    ref={inputRef}
-                    type="number"
-                    min="1"
-                    max={selectedItem.product.stock || 999}
-                    value={tempQuantity}
-                    onChange={(e) => setTempQuantity(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    className={`w-full px-3 py-2 text-white border rounded-lg focus:ring-2 text-center text-lg font-medium transition-colors ${
-                      hasError 
-                        ? 'bg-red-900/30 border-red-500 focus:ring-red-500' 
-                        : 'bg-slate-700 border-slate-600 focus:ring-indigo-500'
-                    }`}
-                    placeholder="Cantidad"
-                  />
-                  
-                  {/* Mensajes de error/advertencia */}
-                  {isOverStock && (
-                    <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 rounded-lg p-2">
-                      <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
-                      <span>Stock insuficiente. Máximo: {maxStock}</span>
-                    </div>
-                  )}
-                  
-                  {isUnderMin && (
-                    <div className="flex items-center gap-2 text-amber-400 text-sm bg-amber-500/10 rounded-lg p-2">
-                      <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
-                      <span>La cantidad mínima es 1</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Controles */}
-                <div className="flex gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={closeDialog}
-                    className="flex-1 px-4 py-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleQuantityChange}
-                    disabled={hasError}
-                    className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
-                      hasError
-                        ? 'bg-slate-600 text-slate-400 cursor-not-allowed'
-                        : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                    }`}
-                  >
-                    Confirmar
-                  </button>
-                </div>
-
-                <p className="text-xs text-slate-400 text-center">
-                  {hasError ? 'Corrige el error para continuar' : 'Presiona Enter para confirmar'}
-                </p>
-              </div>
-            );
-          })()}
-        </DialogContent>
-      </Dialog>
+      {/* Modal separado - usando QuantityEditModal */}
+      <QuantityEditModal
+        selectedItem={selectedItem}
+        onClose={closeDialog}
+        onConfirm={handleQuantityConfirm}
+      />
     </>
   );
 }

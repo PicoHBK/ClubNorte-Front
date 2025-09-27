@@ -277,8 +277,14 @@ export default function FormCreateIncome() {
                         Total a pagar
                       </div>
                       <div className="text-3xl font-bold text-emerald-400">
-                        ${total.toFixed(2)}
+                        {new Intl.NumberFormat("es-AR", {
+                          style: "currency",
+                          currency: "ARS",
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
+                        }).format(total)}
                       </div>
+
                       {fields.length > 0 && (
                         <div className="text-slate-400 text-xs mt-1">
                           {fields.length} productos
