@@ -22,6 +22,8 @@ import RegisterPointSale from "../Register/RegisterPointSale";
 import FormCreateSportCourt from "../SportCourt/FromCreateSportCourt";
 import TableSportCourt from "../SportCourt/TableSportCourt";
 import TableRegisters from "../Register/TableRegisters";
+import ExpenseCreate from "../Expense/ExpenseCreate";
+import TableExpenses from "../Expense/TableExpense";
 
 
 
@@ -88,6 +90,32 @@ export const pointSaleConfig: PointSaleConfig = {
               icon: ListOrdered,
               component: TableIncomesSportCourt,
             },
+          ],
+        },
+      ],
+    },
+    {
+      id: "Gastos",
+      name: "Gastos",
+      models: [
+        {
+          id: "expense",
+          name: "Gastos",
+          icon: DollarSign,
+          color: "text-red-400",
+          actions: [
+            {
+              id: "crear-gasto",
+              name: "Crear Gasto",
+              icon: PlusCircle,
+              component: ExpenseCreate,
+            },
+            {
+              id: "list-gastos",
+              name: "Lista de Gastos",
+              icon: ListOrdered,
+              component: TableExpenses,
+            }
           ],
         },
       ],

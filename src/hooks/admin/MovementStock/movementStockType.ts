@@ -31,3 +31,20 @@ interface MovementProduct {
   price: number;
   stock: number;
 }
+
+// Interfaz para crear una compra/gasto
+export interface ExpenseBuyCreate {
+  description: string;
+  item_expense_buys: ItemExpenseBuy[];
+  payment_method: PaymentMethod;
+}
+
+// Interfaz para los items de la compra
+interface ItemExpenseBuy {
+  price: number;
+  product_id: number;
+  quantity: number;
+}
+
+// Tipo para los métodos de pago
+export type PaymentMethod = "efectivo" | "tarjeta" | "transferencia";
