@@ -7,7 +7,8 @@ import {
   useReactTable,
   type SortingState,
 } from "@tanstack/react-table";
-import { format, subMonths, startOfDay } from "date-fns";
+import { format } from "date-fns";
+import { NumericFormat } from "react-number-format";
 
 // Íconos
 import {
@@ -22,12 +23,15 @@ import {
   ArrowRightLeft,
   Calendar,
   Wallet,
+  FileText,
 } from "lucide-react";
 
 import Modal from "@/components/generic/Modal";
 import { useGetExpensesByDate } from "@/hooks/pointSale/Expense/useGetExpensesByDate";
 import type { Expense } from "@/hooks/pointSale/Expense/ExpenseTypes";
 import ExpenseActions from "./ExpenseActions/ExpenseActions";
+import { PRESET_BUTTONS, type DateRange } from "@/utils/timeFilter/dateRangeUtils";
+import DateRangePicker from "@/utils/timeFilter/DateRangePicker";
 
 const TableExpenses = () => {
   /**
@@ -52,20 +56,16 @@ const TableExpenses = () => {
   /**
    * Estado para filtros de fecha
    */
-  const formatDate = (date: Date) => format(startOfDay(date), 'yyyy-MM-dd');
-
-  const today = new Date();
-  const oneMonthAgo = subMonths(today, 1);
-
-  const [fromDate, setFromDate] = useState(formatDate(oneMonthAgo));
-  const [toDate, setToDate] = useState(formatDate(today));
+  const [dateRange, setDateRange] = useState<DateRange>(
+    PRESET_BUTTONS.lastMonth.getRange()
+  );
 
   /**
    * Params dinámicos con el rango de fechas
    */
   const params = {
-    from_date: fromDate,
-    to_date: toDate,
+    from_date: dateRange.from,
+    to_date: dateRange.to,
   };
 
   /**
@@ -86,7 +86,12 @@ const TableExpenses = () => {
     columnHelper.accessor("id", {
       header: "ID",
       cell: (info) => (
-        <span className="text-slate-400 font-mono text-xs">{info.getValue()}</span>
+        <div className="flex items-center gap-2">
+          <div className="bg-red-500/10 rounded-lg p-1.5">
+            <FileText className="w-3.5 h-3.5 text-red-400" />
+          </div>
+          <span className="text-slate-300 font-medium text-sm">#{info.getValue()}</span>
+        </div>
       ),
     }),
     columnHelper.accessor(
@@ -95,30 +100,55 @@ const TableExpenses = () => {
         id: "user",
         header: "Usuario",
         cell: (info) => (
-          <div className="flex flex-col">
-            <span className="font-semibold text-white">{info.getValue()}</span>
-            <span className="text-xs text-slate-400">{info.row.original.user.email}</span>
+          <div className="flex items-center gap-3">
+            <div className="bg-indigo-500/10 rounded-lg p-2">
+              <Users className="w-4 h-4 text-indigo-400" />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-semibold text-white">{info.getValue()}</span>
+              <span className="text-xs text-slate-400">{info.row.original.user.email}</span>
+            </div>
           </div>
         ),
       }
     ),
     columnHelper.accessor("payment_method", {
       header: "Método de Pago",
-      cell: (info) => (
-        <div className="flex items-center gap-2">
-          {info.getValue() === 'efectivo' && <Wallet className="w-4 h-4 text-purple-400" />}
-          {info.getValue() === 'tarjeta' && <CreditCard className="w-4 h-4 text-orange-400" />}
-          {info.getValue() === 'transferencia' && <ArrowRightLeft className="w-4 h-4 text-cyan-400" />}
-          <span className="text-slate-300 capitalize">{info.getValue()}</span>
-        </div>
-      ),
+      cell: (info) => {
+        const method = info.getValue();
+        const methodConfig = {
+          efectivo: { icon: Wallet, color: 'purple', label: 'Efectivo' },
+          tarjeta: { icon: CreditCard, color: 'orange', label: 'Tarjeta' },
+          transferencia: { icon: ArrowRightLeft, color: 'cyan', label: 'Transferencia' },
+        };
+        
+        const config = methodConfig[method as keyof typeof methodConfig];
+        const Icon = config.icon;
+        
+        return (
+          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-${config.color}-500/10 border border-${config.color}-500/20`}>
+            <Icon className={`w-4 h-4 text-${config.color}-400`} />
+            <span className={`text-${config.color}-400 font-medium text-sm`}>{config.label}</span>
+          </div>
+        );
+      },
     }),
     columnHelper.accessor("total", {
       header: "Total",
       cell: (info) => (
-        <span className="text-red-500 font-bold text-lg">
-          ${info.getValue().toFixed(2)}
-        </span>
+        <div className="text-right">
+          <NumericFormat
+            value={info.getValue()}
+            displayType="text"
+            thousandSeparator="."
+            decimalSeparator=","
+            prefix="$"
+            decimalScale={0}
+            fixedDecimalScale
+            className="text-red-400 font-bold text-lg"
+            renderText={(value) => <span className="text-red-400 font-bold text-lg">{value}</span>}
+          />
+        </div>
       ),
     }),
     columnHelper.accessor("created_at", {
@@ -126,9 +156,14 @@ const TableExpenses = () => {
       cell: (info) => {
         const date = new Date(info.getValue());
         return (
-          <div className="flex flex-col">
-            <span className="text-slate-300">{format(date, 'dd/MM/yyyy')}</span>
-            <span className="text-xs text-slate-500">{format(date, 'HH:mm:ss')}</span>
+          <div className="flex items-center gap-2">
+            <div className="bg-slate-700/50 rounded-lg p-1.5">
+              <Calendar className="w-4 h-4 text-slate-400" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-slate-200 font-medium text-sm">{format(date, 'dd/MM/yyyy')}</span>
+              <span className="text-xs text-slate-500">{format(date, 'HH:mm:ss')}</span>
+            </div>
           </div>
         );
       },
@@ -142,7 +177,7 @@ const TableExpenses = () => {
             setSelectedExpenseId(info.row.original.id);
             setIsModalOpen(true);
           }}
-          className="p-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition"
+          className="p-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all hover:scale-105 shadow-lg hover:shadow-indigo-500/30"
         >
           <Eye className="w-4 h-4" />
         </button>
@@ -181,8 +216,11 @@ const TableExpenses = () => {
       <div className="w-full max-w-7xl space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 bg-red-600 rounded-xl">
-            <TrendingDown className="w-6 h-6 text-white" />
+          <div className="relative">
+            <div className="p-3 bg-red-600 rounded-xl">
+              <TrendingDown className="w-6 h-6 text-white" />
+            </div>
+            <div className="absolute inset-0 bg-red-500/20 blur-lg rounded-xl" />
           </div>
           <div>
             <h2 className="text-3xl font-bold text-white">
@@ -192,55 +230,18 @@ const TableExpenses = () => {
           </div>
         </div>
 
-        {/* Filtros mejorados */}
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-          <div className="flex items-center gap-2 mb-4">
-            <Calendar className="w-5 h-5 text-red-400" />
-            <h3 className="text-lg font-semibold text-white">Filtro por Fechas</h3>
-          </div>
-          
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex flex-col">
-              <label className="text-slate-400 text-sm mb-1 flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                Desde:
-              </label>
-              <input
-                type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                className="bg-slate-800/50 border border-slate-600 text-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-slate-400 text-sm mb-1 flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                Hasta:
-              </label>
-              <input
-                type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                className="bg-slate-800/50 border border-slate-600 text-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
-              />
-            </div>
-            <div className="flex items-end">
-              <button
-                onClick={() => {
-                  setFromDate(formatDate(oneMonthAgo));
-                  setToDate(formatDate(today));
-                }}
-                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors flex items-center gap-2"
-              >
-                <Calendar className="w-4 h-4" />
-                Último mes
-              </button>
-            </div>
-          </div>
-        </div>
+        {/* Filtros con DateRangePicker */}
+        <DateRangePicker
+          dateRange={dateRange}
+          onChange={setDateRange}
+          presets={['today', 'last7days', 'last30days', 'lastMonth']}
+          defaultPreset="lastMonth"
+          showTitle={true}
+          buttonStyle="default"
+        />
 
         {/* Tabla */}
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-lg">
+        <div className="overflow-hidden rounded-xl border-2 border-slate-700 bg-slate-800/50 shadow-2xl">
           {isLoading ? (
             <div className="p-8 text-center">
               <div className="inline-flex items-center gap-3 text-slate-400">
@@ -250,14 +251,14 @@ const TableExpenses = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-white/10">
-                <thead className="bg-white/5">
+              <table className="min-w-full divide-y divide-slate-700">
+                <thead className="bg-slate-900/50">
                   {table.getHeaderGroups().map((headerGroup) => (
                     <tr key={headerGroup.id}>
                       {headerGroup.headers.map((header) => (
                         <th
                           key={header.id}
-                          className="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
+                          className="px-6 py-4 text-left text-xs font-bold text-slate-300 uppercase tracking-wider"
                         >
                           {header.isPlaceholder
                             ? null
@@ -270,17 +271,17 @@ const TableExpenses = () => {
                     </tr>
                   ))}
                 </thead>
-                <tbody className="divide-y divide-white/10">
+                <tbody className="divide-y divide-slate-700/50">
                   {expensesData.expenses && expensesData.expenses.length > 0 ? (
                     table.getRowModel().rows.map((row) => (
                       <tr
                         key={row.id}
-                        className="hover:bg-white/5 transition-all duration-200 hover:shadow-lg"
+                        className="hover:bg-slate-700/30 transition-all duration-200"
                       >
                         {row.getVisibleCells().map((cell) => (
                           <td
                             key={cell.id}
-                            className="px-6 py-4 whitespace-nowrap text-sm text-slate-300"
+                            className="px-6 py-4 whitespace-nowrap text-sm"
                           >
                             {flexRender(
                               cell.column.columnDef.cell,
@@ -297,11 +298,13 @@ const TableExpenses = () => {
                         className="px-6 py-12 text-center"
                       >
                         <div className="flex flex-col items-center gap-3">
-                          <TrendingDown className="w-12 h-12 text-slate-600" />
-                          <div className="text-slate-400">
+                          <div className="bg-red-500/10 rounded-xl p-4">
+                            <TrendingDown className="w-12 h-12 text-red-400" />
+                          </div>
+                          <div className="text-slate-300 font-medium text-lg">
                             No se encontraron gastos
                           </div>
-                          <div className="text-xs text-slate-500">
+                          <div className="text-sm text-slate-500">
                             Intenta ajustar los filtros de fecha
                           </div>
                         </div>
@@ -314,13 +317,13 @@ const TableExpenses = () => {
           )}
         </div>
 
-        {/* Paginación mejorada */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/5 rounded-xl p-4 border border-white/10">
+        {/* Paginación */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-800 rounded-xl p-4 border-2 border-slate-700">
           <div className="flex items-center gap-2">
             <button
               onClick={() => table.setPageIndex(0)}
               disabled={!table.getCanPreviousPage()}
-              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              className="p-2 rounded-lg bg-slate-700 hover:bg-indigo-600 text-slate-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
               title="Primera página"
             >
               <ChevronsLeft className="w-5 h-5" />
@@ -328,13 +331,13 @@ const TableExpenses = () => {
             <button
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
-              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              className="p-2 rounded-lg bg-slate-700 hover:bg-indigo-600 text-slate-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
               title="Página anterior"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
 
-            <span className="text-slate-400 text-sm px-3 py-1 bg-slate-800/50 rounded">
+            <span className="text-slate-300 text-sm px-4 py-2 bg-slate-900 rounded-lg font-medium">
               Página{" "}
               <strong className="text-white">
                 {pagination.pageIndex + 1}
@@ -348,7 +351,7 @@ const TableExpenses = () => {
             <button
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
-              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              className="p-2 rounded-lg bg-slate-700 hover:bg-indigo-600 text-slate-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
               title="Página siguiente"
             >
               <ChevronRight className="w-5 h-5" />
@@ -356,7 +359,7 @@ const TableExpenses = () => {
             <button
               onClick={() => table.setPageIndex((expensesData.total_pages || 1) - 1)}
               disabled={!table.getCanNextPage()}
-              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              className="p-2 rounded-lg bg-slate-700 hover:bg-indigo-600 text-slate-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
               title="Última página"
             >
               <ChevronsRight className="w-5 h-5" />
@@ -366,7 +369,7 @@ const TableExpenses = () => {
           <select
             value={pagination.pageSize}
             onChange={(e) => table.setPageSize(Number(e.target.value))}
-            className="bg-slate-800/50 border border-slate-600 text-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-red-500"
+            className="bg-slate-900 border-2 border-slate-700 text-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all font-medium"
           >
             {[5, 10, 20, 50].map((size) => (
               <option key={size} value={size}>
@@ -377,92 +380,129 @@ const TableExpenses = () => {
         </div>
 
         {/* Resumen de Métricas - Primera fila */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-          <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col items-center text-center">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="bg-slate-800 rounded-xl p-4 border-2 border-slate-700 hover:border-red-500/50 transition-all">
             <div className="flex items-center gap-2 mb-2">
-              <Users className="w-5 h-5 text-red-400" />
-              <span className="text-sm text-slate-400">Total Gastos</span>
+              <FileText className="w-5 h-5 text-red-400" />
+              <span className="text-sm text-slate-400 font-medium">Total Gastos</span>
             </div>
-            <div className="text-2xl font-bold text-red-400">
+            <div className="text-3xl font-bold text-white">
               {expensesData.total || 0}
             </div>
           </div>
 
-          <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col items-center text-center">
+          <div className="bg-slate-800 rounded-xl p-4 border-2 border-slate-700 hover:border-blue-500/50 transition-all">
             <div className="flex items-center gap-2 mb-2">
               <TrendingDown className="w-5 h-5 text-blue-400" />
-              <span className="text-sm text-slate-400">Gastos Totales</span>
+              <span className="text-sm text-slate-400 font-medium">Monto Total</span>
             </div>
             <div className="text-2xl font-bold text-blue-400">
-              ${totalGeneral.toLocaleString('es-AR')}
+              <NumericFormat
+                value={totalGeneral}
+                displayType="text"
+                thousandSeparator="."
+                decimalSeparator=","
+                prefix="$"
+                decimalScale={0}
+                fixedDecimalScale
+              />
             </div>
           </div>
 
-          <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col items-center text-center">
+          <div className="bg-slate-800 rounded-xl p-4 border-2 border-slate-700 hover:border-purple-500/50 transition-all">
             <div className="flex items-center gap-2 mb-2">
               <Wallet className="w-5 h-5 text-purple-400" />
-              <span className="text-sm text-slate-400">Gastos Efectivo</span>
+              <span className="text-sm text-slate-400 font-medium">Efectivo</span>
             </div>
             <div className="text-2xl font-bold text-purple-400">
-              ${totalEfectivo.toLocaleString('es-AR')}
+              <NumericFormat
+                value={totalEfectivo}
+                displayType="text"
+                thousandSeparator="."
+                decimalSeparator=","
+                prefix="$"
+                decimalScale={0}
+                fixedDecimalScale
+              />
             </div>
           </div>
 
-          <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col items-center text-center">
+          <div className="bg-slate-800 rounded-xl p-4 border-2 border-slate-700 hover:border-orange-500/50 transition-all">
             <div className="flex items-center gap-2 mb-2">
               <CreditCard className="w-5 h-5 text-orange-400" />
-              <span className="text-sm text-slate-400">Gastos Tarjeta</span>
+              <span className="text-sm text-slate-400 font-medium">Tarjeta</span>
             </div>
             <div className="text-2xl font-bold text-orange-400">
-              ${totalTarjeta.toLocaleString('es-AR')}
+              <NumericFormat
+                value={totalTarjeta}
+                displayType="text"
+                thousandSeparator="."
+                decimalSeparator=","
+                prefix="$"
+                decimalScale={0}
+                fixedDecimalScale
+              />
             </div>
           </div>
 
-          <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col items-center text-center">
+          <div className="bg-slate-800 rounded-xl p-4 border-2 border-slate-700 hover:border-cyan-500/50 transition-all">
             <div className="flex items-center gap-2 mb-2">
               <ArrowRightLeft className="w-5 h-5 text-cyan-400" />
-              <span className="text-sm text-slate-400">Transferencias</span>
+              <span className="text-sm text-slate-400 font-medium">Transferencias</span>
             </div>
             <div className="text-2xl font-bold text-cyan-400">
-              ${totalTransferencia.toLocaleString('es-AR')}
+              <NumericFormat
+                value={totalTransferencia}
+                displayType="text"
+                thousandSeparator="."
+                decimalSeparator=","
+                prefix="$"
+                decimalScale={0}
+                fixedDecimalScale
+              />
             </div>
           </div>
         </div>
 
         {/* Resumen adicional - Segunda fila */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col items-center text-center">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-slate-800 rounded-xl p-4 border-2 border-slate-700 hover:border-yellow-500/50 transition-all">
             <div className="flex items-center gap-2 mb-2">
               <TrendingDown className="w-5 h-5 text-yellow-400" />
-              <span className="text-sm text-slate-400">Promedio por Gasto</span>
+              <span className="text-sm text-slate-400 font-medium">Promedio por Gasto</span>
             </div>
             <div className="text-2xl font-bold text-yellow-400">
-              ${promedioGasto.toLocaleString('es-AR', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-              })}
+              <NumericFormat
+                value={promedioGasto}
+                displayType="text"
+                thousandSeparator="."
+                decimalSeparator=","
+                prefix="$"
+                decimalScale={0}
+                fixedDecimalScale
+              />
             </div>
           </div>
 
-          <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col items-center text-center">
+          <div className="bg-slate-800 rounded-xl p-4 border-2 border-slate-700 hover:border-indigo-500/50 transition-all">
             <div className="flex items-center gap-2 mb-2">
               <Users className="w-5 h-5 text-indigo-400" />
-              <span className="text-sm text-slate-400">Usuarios Únicos</span>
+              <span className="text-sm text-slate-400 font-medium">Usuarios Únicos</span>
             </div>
-            <div className="text-2xl font-bold text-indigo-400">
+            <div className="text-3xl font-bold text-indigo-400">
               {usuariosUnicos}
             </div>
           </div>
 
-          <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col items-center text-center">
+          <div className="bg-slate-800 rounded-xl p-4 border-2 border-slate-700 hover:border-pink-500/50 transition-all">
             <div className="flex items-center gap-2 mb-2">
               <Calendar className="w-5 h-5 text-pink-400" />
-              <span className="text-sm text-slate-400">Período Seleccionado</span>
+              <span className="text-sm text-slate-400 font-medium">Período</span>
             </div>
             <div className="text-sm font-bold text-pink-400">
-              {fromDate === toDate 
-                ? format(new Date(fromDate), 'dd/MM/yyyy')
-                : `${format(new Date(fromDate), 'dd/MM/yyyy')} - ${format(new Date(toDate), 'dd/MM/yyyy')}`
+              {dateRange.from === dateRange.to 
+                ? format(new Date(dateRange.from), 'dd/MM/yyyy')
+                : `${format(new Date(dateRange.from), 'dd/MM/yyyy')} - ${format(new Date(dateRange.to), 'dd/MM/yyyy')}`
               }
             </div>
           </div>

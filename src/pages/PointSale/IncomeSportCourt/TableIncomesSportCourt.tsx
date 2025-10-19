@@ -25,11 +25,15 @@ import {
   DollarSign,
   TrendingUp,
   Users,
+  MapPin,
 } from "lucide-react";
 
 import Modal from "@/components/generic/Modal";
 import { useGetIncomesSportCourtByDate } from "@/hooks/pointSale/IncomeSportCourt/useGetIncomesSportCourtByDate";
 import type { IncomeSportCourt } from "@/hooks/pointSale/IncomeSportCourt/IncomeSportCourtTypes";
+import IncomeSportCourtActions from "./IncomeSportCourtActions/IncomeSportCourtActions";
+import { PRESET_BUTTONS, type DateRange } from "@/utils/timeFilter/dateRangeUtils";
+import DateRangePicker from "@/utils/timeFilter/DateRangePicker";
 
 const TableIncomesSportCourt = () => {
   /**
@@ -54,16 +58,16 @@ const TableIncomesSportCourt = () => {
   /**
    * Estado para filtros de fecha
    */
-  const today = format(new Date(), 'yyyy-MM-dd');
-  const [fromDate, setFromDate] = useState(today);
-  const [toDate, setToDate] = useState(today);
+  const [dateRange, setDateRange] = useState<DateRange>(
+    PRESET_BUTTONS.today.getRange()
+  );
 
   /**
    * Params dinámicos con el rango de fechas
    */
   const params = {
-    from_date: fromDate,
-    to_date: toDate,
+    from_date: dateRange.from,
+    to_date: dateRange.to,
   };
 
   /**
@@ -76,7 +80,7 @@ const TableIncomesSportCourt = () => {
   );
 
   /**
-   * Función para formatear fechas amigables (corregida)
+   * Función para formatear fechas amigables
    */
   const formatFriendlyDate = (dateString: string) => {
     if (!dateString) return 'Fecha no disponible';
@@ -100,7 +104,7 @@ const TableIncomesSportCourt = () => {
   };
 
   /**
-   * Función para obtener el ícono del método de pago (mejorada con Lucide React)
+   * Función para obtener el ícono del método de pago
    */
   const getPaymentIcon = (method: string) => {
     switch (method?.toLowerCase()) {
@@ -126,122 +130,128 @@ const TableIncomesSportCourt = () => {
   const columns = [
     columnHelper.accessor("id", {
       header: () => (
-        <div className="flex items-center gap-2">
-          <Users className="w-4 h-4" />
+        <div className="flex items-center gap-1">
+          <Users className="w-3 h-3" />
           ID
         </div>
       ),
       cell: (info) => (
-        <span className="text-slate-400 font-mono text-sm bg-slate-800/50 px-2 py-1 rounded">
+        <span className="text-slate-400 font-mono text-xs bg-slate-800/50 px-2 py-1 rounded">
           #{info.getValue()}
         </span>
       ),
     }),
-    columnHelper.accessor("price", {
+    columnHelper.accessor("sports_court.name", {
       header: () => (
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-4 h-4" />
-          Precio Total
+        <div className="flex items-center gap-1">
+          <MapPin className="w-3 h-3" />
+          Cancha
         </div>
       ),
       cell: (info) => (
-        <span className="text-emerald-400 font-semibold text-lg flex items-center gap-1">
-          <DollarSign className="w-4 h-4" />
+        <div className="flex flex-col">
+          <span className="text-slate-200 font-medium text-sm">
+            {info.getValue()}
+          </span>
+          <span className="text-xs text-slate-500">
+            {info.row.original.sports_court.code}
+          </span>
+        </div>
+      ),
+    }),
+    columnHelper.accessor("price", {
+      header: () => (
+        <div className="flex items-center gap-1">
+          <TrendingUp className="w-3 h-3" />
+          Total
+        </div>
+      ),
+      cell: (info) => (
+        <span className="text-emerald-400 font-semibold flex items-center gap-1">
+          <DollarSign className="w-3 h-3" />
           {info.getValue()?.toLocaleString('es-AR') || '0'}
         </span>
       ),
     }),
-    columnHelper.accessor("partial_pay", {
+    columnHelper.display({
+      id: "payments",
       header: () => (
-        <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4" />
-          Pago Parcial
+        <div className="flex items-center gap-1">
+          <Clock className="w-3 h-3" />
+          Pagos
         </div>
       ),
       cell: (info) => {
         const row = info.row.original;
-        return (
-          <div className="flex items-center gap-2">
-            {getPaymentIcon(row.partial_payment_method)}
-            <div>
-              <div className="text-blue-400 font-medium">
-                ${info.getValue()?.toLocaleString('es-AR') || '0'}
-              </div>
-              <div className="text-xs text-slate-500 capitalize bg-slate-800/30 px-2 py-0.5 rounded">
-                {row.partial_payment_method || 'No especificado'}
-              </div>
-            </div>
-          </div>
-        );
-      },
-    }),
-    columnHelper.accessor("rest_pay", {
-      header: () => (
-        <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4" />
-          Pago Restante
-        </div>
-      ),
-      cell: (info) => {
-        const row = info.row.original;
-        const restPay = info.getValue();
-        
-        if (restPay === null || restPay === 0) {
-          return (
-            <div className="flex items-center gap-1 text-yellow-400 text-sm">
-              <CheckCircle className="w-4 h-4" />
-              Pendiente
-            </div>
-          );
-        }
+        const restPay = row.rest_pay;
         
         return (
-          <div className="flex items-center gap-2">
-            {getPaymentIcon(row.rest_payment_method)}
-            <div>
-              <div className="text-orange-400 font-medium">
-                ${restPay?.toLocaleString('es-AR') || '0'}
-              </div>
-              <div className="text-xs text-slate-500 capitalize bg-slate-800/30 px-2 py-0.5 rounded">
-                {row.rest_payment_method || 'Pendiente'}
+          <div className="space-y-1">
+            {/* Pago Parcial */}
+            <div className="flex items-center gap-2 text-xs">
+              {getPaymentIcon(row.partial_payment_method)}
+              <div className="flex items-center gap-1">
+                <span className="text-blue-400 font-medium">
+                  ${row.partial_pay?.toLocaleString('es-AR') || '0'}
+                </span>
+                <span className="text-slate-500 capitalize">
+                  ({row.partial_payment_method})
+                </span>
               </div>
             </div>
+            
+            {/* Pago Restante */}
+            {restPay !== null && restPay !== 0 ? (
+              <div className="flex items-center gap-2 text-xs border-t border-slate-700/50 pt-1">
+                {getPaymentIcon(row.rest_payment_method)}
+                <div className="flex items-center gap-1">
+                  <span className="text-orange-400 font-medium">
+                    ${restPay?.toLocaleString('es-AR') || '0'}
+                  </span>
+                  <span className="text-slate-500 capitalize">
+                    ({row.rest_payment_method})
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 text-yellow-400 text-xs border-t border-slate-700/50 pt-1">
+                <CheckCircle className="w-3 h-3" />
+                Pendiente
+              </div>
+            )}
           </div>
         );
       },
     }),
     columnHelper.accessor("date_partial_pay", {
       header: () => (
-        <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4" />
-          Fecha Pago
+        <div className="flex items-center gap-1">
+          <Calendar className="w-3 h-3" />
+          Fecha
         </div>
       ),
       cell: (info) => {
         const dateValue = info.getValue();
         return (
-          <div className="flex items-center gap-1">
-            <Clock className="w-3 h-3 text-slate-500" />
-            <span className="text-slate-300 text-sm">
-              {dateValue ? formatFriendlyDate(dateValue) : 'Sin fecha'}
-            </span>
-          </div>
+          <span className="text-slate-300 text-xs">
+            {dateValue ? formatFriendlyDate(dateValue) : 'Sin fecha'}
+          </span>
         );
       },
     }),
     columnHelper.display({
       id: "actions",
-      header: "Acciones",
+      header: "",
       cell: (info) => (
         <button
           onClick={() => {
             setSelectedIncomeId(info.row.original.id);
             setIsModalOpen(true);
           }}
-          className="p-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all duration-200 hover:scale-105 flex items-center gap-1"
+          className="p-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all duration-200 hover:scale-105"
           title="Ver detalles"
         >
-          <Eye className="w-4 h-4" />
+          <Eye className="w-3 h-3" />
         </button>
       ),
     }),
@@ -286,54 +296,17 @@ const TableIncomesSportCourt = () => {
           </div>
         </div>
 
-        {/* Filtros mejorados */}
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-          <div className="flex items-center gap-2 mb-4">
-            <Calendar className="w-5 h-5 text-indigo-400" />
-            <h3 className="text-lg font-semibold text-white">Filtro por Fechas</h3>
-          </div>
-          
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex flex-col">
-              <label className="text-slate-400 text-sm mb-1 flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                Desde:
-              </label>
-              <input
-                type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                className="bg-slate-800/50 border border-slate-600 text-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-slate-400 text-sm mb-1 flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                Hasta:
-              </label>
-              <input
-                type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                className="bg-slate-800/50 border border-slate-600 text-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-              />
-            </div>
-            <div className="flex items-end">
-              <button
-                onClick={() => {
-                  setFromDate(today);
-                  setToDate(today);
-                }}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors flex items-center gap-2"
-              >
-                <Clock className="w-4 h-4" />
-                Hoy
-              </button>
-            </div>
-          </div>
-        </div>
+        {/* Filtros con DateRangePicker */}
+        <DateRangePicker
+          dateRange={dateRange}
+          onChange={setDateRange}
+          presets={['today', 'last7days', 'last30days']}
+          defaultPreset="today"
+          showTitle={true}
+          buttonStyle="default"
+        />
 
-        {/* Tabla */}
+        {/* Tabla Compacta */}
         <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-lg">
           {isLoading ? (
             <div className="p-8 text-center">
@@ -351,7 +324,7 @@ const TableIncomesSportCourt = () => {
                       {headerGroup.headers.map((header) => (
                         <th
                           key={header.id}
-                          className="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
+                          className="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider"
                         >
                           {header.isPlaceholder
                             ? null
@@ -374,7 +347,7 @@ const TableIncomesSportCourt = () => {
                         {row.getVisibleCells().map((cell) => (
                           <td
                             key={cell.id}
-                            className="px-6 py-4 whitespace-nowrap text-sm text-slate-300"
+                            className="px-4 py-3 text-sm text-slate-300"
                           >
                             {flexRender(
                               cell.column.columnDef.cell,
@@ -470,51 +443,52 @@ const TableIncomesSportCourt = () => {
           </select>
         </div>
 
+        {/* Métricas */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-  <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col items-center text-center">
-    <div className="flex items-center gap-2 mb-2">
-      <Users className="w-5 h-5 text-emerald-400" />
-      <span className="text-sm text-slate-400">Total Ingresos</span>
-    </div>
-    <div className="text-2xl font-bold text-emerald-400">
-      {incomesData.total || 0}
-    </div>
-  </div>
+          <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col items-center text-center">
+            <div className="flex items-center gap-2 mb-2">
+              <Users className="w-5 h-5 text-emerald-400" />
+              <span className="text-sm text-slate-400">Total Ingresos</span>
+            </div>
+            <div className="text-2xl font-bold text-emerald-400">
+              {incomesData.total || 0}
+            </div>
+          </div>
 
-  <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col items-center text-center">
-    <div className="flex items-center gap-2 mb-2">
-      <Clock className="w-5 h-5 text-blue-400" />
-      <span className="text-sm text-slate-400">Pagos Parciales</span>
-    </div>
-    <div className="text-2xl font-bold text-blue-400">
-      ${totalPartialPay.toLocaleString('es-AR')}
-    </div>
-  </div>
+          <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col items-center text-center">
+            <div className="flex items-center gap-2 mb-2">
+              <Clock className="w-5 h-5 text-blue-400" />
+              <span className="text-sm text-slate-400">Pagos Parciales</span>
+            </div>
+            <div className="text-2xl font-bold text-blue-400">
+              ${totalPartialPay.toLocaleString('es-AR')}
+            </div>
+          </div>
 
-  <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col items-center text-center">
-    <div className="flex items-center gap-2 mb-2">
-      <Clock className="w-5 h-5 text-orange-400" />
-      <span className="text-sm text-slate-400">Pagos Restantes</span>
-    </div>
-    <div className="text-2xl font-bold text-orange-400">
-      ${totalRestPay.toLocaleString('es-AR')}
-    </div>
-  </div>
+          <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col items-center text-center">
+            <div className="flex items-center gap-2 mb-2">
+              <Clock className="w-5 h-5 text-orange-400" />
+              <span className="text-sm text-slate-400">Pagos Restantes</span>
+            </div>
+            <div className="text-2xl font-bold text-orange-400">
+              ${totalRestPay.toLocaleString('es-AR')}
+            </div>
+          </div>
 
-  <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col items-center text-center">
-    <div className="flex items-center gap-2 mb-2">
-      <TrendingUp className="w-5 h-5 text-purple-400" />
-      <span className="text-sm text-slate-400">Total General</span>
-    </div>
-    <div className="text-2xl font-bold text-purple-400">
-      ${totalGeneral.toLocaleString('es-AR')}
-    </div>
-  </div>
-</div>
+          <div className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col items-center text-center">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="w-5 h-5 text-purple-400" />
+              <span className="text-sm text-slate-400">Total General</span>
+            </div>
+            <div className="text-2xl font-bold text-purple-400">
+              ${totalGeneral.toLocaleString('es-AR')}
+            </div>
+          </div>
+        </div>
 
       </div>
 
-      {/* Modal mejorado */}
+      {/* Modal mejorado - RESTAURADO */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => {
@@ -525,25 +499,7 @@ const TableIncomesSportCourt = () => {
         size="md"
       >
         {selectedIncomeId && (
-          <div className="p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Eye className="w-5 h-5 text-indigo-400" />
-              <h4 className="text-lg font-semibold text-white">
-                Ingreso ID: #{selectedIncomeId}
-              </h4>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="bg-slate-800/50 rounded-lg p-4">
-                <p className="text-slate-300">
-                  Aquí puedes mostrar información detallada del ingreso seleccionado.
-                </p>
-                <p className="text-slate-400 text-sm mt-2">
-                  Puedes agregar más componentes o datos específicos según tus necesidades.
-                </p>
-              </div>
-            </div>
-          </div>
+          <IncomeSportCourtActions id={selectedIncomeId} />
         )}
       </Modal>
     </div>

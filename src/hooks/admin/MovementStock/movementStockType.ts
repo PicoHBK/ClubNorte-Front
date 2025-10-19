@@ -1,5 +1,14 @@
 import type { User } from "../users/userType";
 
+// Interfaz para el producto dentro de un movimiento
+export interface MovementProduct {
+  id: number;
+  code: string;
+  name: string;
+  price: number;
+  stock: number;
+}
+
 export interface Movement {
   id: number;
   user: User;
@@ -24,12 +33,11 @@ export interface MovementStockCreateData {
   ignore_stock: boolean;
 }
 
-interface MovementProduct {
-  id: number;
-  code: string;
-  name: string;
-  price: number;
-  stock: number;
+// Para actualizar stock en deposito
+export interface UpdateStockDepositData {
+  method: "add" | "subtract" | "set";
+  product_id: number;
+  stock: number | string;
 }
 
 // Interfaz para crear una compra/gasto
@@ -40,7 +48,7 @@ export interface ExpenseBuyCreate {
 }
 
 // Interfaz para los items de la compra
-interface ItemExpenseBuy {
+export interface ItemExpenseBuy {
   price: number;
   product_id: number;
   quantity: number;
@@ -48,3 +56,55 @@ interface ItemExpenseBuy {
 
 // Tipo para los métodos de pago
 export type PaymentMethod = "efectivo" | "tarjeta" | "transferencia";
+
+export interface ExpenseBuyType {
+  id: number;
+  user: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    address: string;
+    cellphone: string;
+    email: string;
+    username: string;
+  };
+  payment_method: string;
+  total: number;
+  created_at: string;
+}
+
+export interface UserType {
+  id: number;
+  first_name: string;
+  last_name: string;
+  address: string;
+  cellphone: string;
+  email: string;
+  username: string;
+}
+
+export interface ProductType {
+  id: number;
+  code: string;
+  name: string;
+  price: number;
+}
+
+export interface ItemExpenseBuyType {
+  id: number;
+  product: ProductType;
+  quantity: number;
+  price: number;
+  subtotal: number;
+  created_at: string;
+}
+
+export interface ExpenseBuyDetailType {
+  id: number;
+  user: UserType;
+  description: string | null;
+  item_expense_buys: ItemExpenseBuyType[];
+  payment_method: string;
+  created_at: string;
+  total: number;
+}

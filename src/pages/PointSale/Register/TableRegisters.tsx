@@ -9,7 +9,6 @@ import {
   type PaginationState,
 } from "@tanstack/react-table";
 import {
-  Calendar,
   Eye,
   DollarSign,
   Lock,
@@ -18,11 +17,13 @@ import {
   ArrowUpCircle,
   ArrowDownCircle,
 } from "lucide-react";
-import { format, subMonths, startOfDay } from "date-fns";
 
 import Modal from "@/components/generic/Modal";
 import { useGetRegisterInfoByDate } from "@/hooks/admin/Register/useGetRegisterInfoByDate";
 import type { RegisterType } from "@/hooks/admin/Register/registerType";
+import RegisterActions from "./RegisterActions/RegisterActions";
+import { PRESET_BUTTONS, type DateRange } from "@/utils/timeFilter/dateRangeUtils";
+import DateRangePicker from "@/utils/timeFilter/DateRangePicker";
 
 const TableRegisters = () => {
   /**
@@ -45,17 +46,16 @@ const TableRegisters = () => {
   const [selectedRegisterId, setSelectedRegisterId] = useState<number | null>(null);
 
   /**
-   * Filtros de fecha - Por defecto desde hace un mes hasta hoy
+   * Filtros de fecha
    */
-  const formatDateForInput = (date: Date) => format(startOfDay(date), 'yyyy-MM-dd');
-  
-  const today = new Date();
-  const oneMonthAgo = subMonths(today, 1);
+  const [dateRange, setDateRange] = useState<DateRange>(
+    PRESET_BUTTONS.lastMonth.getRange()
+  );
 
-  const [fromDate, setFromDate] = useState(formatDateForInput(oneMonthAgo));
-  const [toDate, setToDate] = useState(formatDateForInput(today));
-
-  const params = { from_date: fromDate, to_date: toDate };
+  const params = { 
+    from_date: dateRange.from, 
+    to_date: dateRange.to 
+  };
 
   /**
    * Llamada al hook
@@ -293,34 +293,15 @@ const TableRegisters = () => {
           </div>
         </div>
 
-        {/* Filtros */}
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-          <div className="flex items-center gap-2 mb-4">
-            <Calendar className="w-5 h-5 text-indigo-400" />
-            <h3 className="text-lg font-semibold text-white">Filtro por Fechas</h3>
-          </div>
-          
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex flex-col">
-              <label className="text-slate-400 text-sm mb-1">Desde:</label>
-              <input
-                type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                className="bg-slate-800/50 border border-slate-600 text-slate-300 rounded-lg px-3 py-2"
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-slate-400 text-sm mb-1">Hasta:</label>
-              <input
-                type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                className="bg-slate-800/50 border border-slate-600 text-slate-300 rounded-lg px-3 py-2"
-              />
-            </div>
-          </div>
-        </div>
+        {/* Filtros con DateRangePicker */}
+        <DateRangePicker
+          dateRange={dateRange}
+          onChange={setDateRange}
+          presets={['today', 'last7days', 'last30days', 'lastMonth']}
+          defaultPreset="lastMonth"
+          showTitle={true}
+          buttonStyle="default"
+        />
 
         {/* Tabla */}
         <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-lg">
@@ -439,8 +420,7 @@ const TableRegisters = () => {
       >
         {selectedRegisterId && (
           <div className="text-slate-300">
-            {/* Aquí podrías renderizar RegisterActions o detalles extendidos */}
-            ID de Registro: {selectedRegisterId}
+            <RegisterActions id={selectedRegisterId} />
           </div>
         )}
       </Modal>

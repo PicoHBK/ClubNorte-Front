@@ -1,7 +1,7 @@
 import apiClubNorte from "@/api/apiClubNorte";
 import { useQuery } from "@tanstack/react-query";
 import { getApiError } from "@/utils/apiError";
-import type { Movement } from "./movementStockType";
+import type { Movement} from "./movementStockType";
 
 // Interfaces para la estructura de datos
 

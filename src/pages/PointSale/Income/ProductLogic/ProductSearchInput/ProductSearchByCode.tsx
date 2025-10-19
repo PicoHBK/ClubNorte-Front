@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { Search, Loader2 } from 'lucide-react';
+import { ScanBarcode, Loader2, CheckCircle2, XCircle, AlertTriangle, Package } from 'lucide-react';
 import type { Product } from '@/hooks/pointSale/ProductPointSale/useGetAllProductsPointSale';
 import { useSearchProductsPointSaleByCode } from '@/hooks/pointSale/ProductPointSale/useSearchProductsPointSaleByCode';
 
@@ -13,59 +13,63 @@ interface ProductSearchByCodeProps {
   debounceDelay?: number;
 }
 
+type ScannerState = 
+  | { type: 'idle' }
+  | { type: 'scanning' }
+  | { type: 'success'; productName: string }
+  | { type: 'error'; reason: 'not_found' | 'no_stock' }
+  | { type: 'duplicate'; productName: string };
+
 export default function ProductSearchByCode({
   value,
   onChange,
   onProductSelect,
   selectedProducts = [],
-  placeholder = "Escanear código de barras...",
   className = "",
   debounceDelay = 50
 }: ProductSearchByCodeProps) {
-  const [showResults, setShowResults] = useState(false);
-  const [inputState, setInputState] = useState<'normal' | 'success' | 'error' | 'duplicate'>('normal');
-  const [debouncedValue, setDebouncedValue] = useState('');
-  const [isDebouncing, setIsDebouncing] = useState(false);
+  const [scannerState, setScannerState] = useState<ScannerState>({ type: 'idle' });
+  const [debouncedCode, setDebouncedCode] = useState('');
   
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const stateResetTimer = useRef<NodeJS.Timeout | null>(null);
+  const processedProductRef = useRef<string | number | null>(null); // ✅ Cambiado a string | number | null
+  const isShowingFeedback = useRef(false);
 
-  // Resetear solo input pero mantener estado visual
-  const resetInputOnly = useCallback(() => {
-    onChange('');
-    setShowResults(false);
-    setDebouncedValue('');
-    setIsDebouncing(false);
-    
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
-      debounceTimer.current = null;
+  // Resetear al estado idle después de mostrar feedback
+  const resetToIdle = useCallback(() => {
+    if (stateResetTimer.current) {
+      clearTimeout(stateResetTimer.current);
     }
     
-    setTimeout(() => {
-      if (inputRef.current) {
-        inputRef.current.focus();
-      }
-    }, 10);
-  }, [onChange]);
+    stateResetTimer.current = setTimeout(() => {
+      setScannerState({ type: 'idle' });
+      processedProductRef.current = null;
+      isShowingFeedback.current = false;
+    }, 2500);
+  }, []);
 
-  // Debounce
+  // Debounce del código escaneado
   useEffect(() => {
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current);
     }
 
     if (!value.trim()) {
-      setDebouncedValue('');
-      setIsDebouncing(false);
+      setDebouncedCode('');
+      if (!isShowingFeedback.current) {
+        setScannerState({ type: 'idle' });
+      }
       return;
     }
 
-    setIsDebouncing(true);
+    if (!isShowingFeedback.current) {
+      setScannerState({ type: 'scanning' });
+    }
 
     debounceTimer.current = setTimeout(() => {
-      setDebouncedValue(value.trim());
-      setIsDebouncing(false);
+      setDebouncedCode(value.trim());
     }, debounceDelay);
 
     return () => {
@@ -77,238 +81,252 @@ export default function ProductSearchByCode({
 
   // Hook de búsqueda
   const { 
-    productsData: codeProductsData, 
-    isLoading: isSearchingByCode, 
-    isError: hasCodeSearchError
-  } = useSearchProductsPointSaleByCode(debouncedValue);
+    productsData, 
+    isLoading, 
+    isError
+  } = useSearchProductsPointSaleByCode(debouncedCode);
 
-  // Memoizar searchResults
   const searchResults = useMemo(() => {
-    return codeProductsData.products || [];
-  }, [codeProductsData.products]);
+    return productsData.products || [];
+  }, [productsData.products]);
 
   // Validar si ya está seleccionado
   const isProductAlreadySelected = useCallback((product: Product) => {
     return selectedProducts.some(selected => selected.id === product.id);
   }, [selectedProducts]);
 
-  // Seleccionar producto
-  const handleProductSelect = useCallback((product: Product) => {
-    if (product.stock <= 0) return;
+  // Procesar resultado de búsqueda
+  useEffect(() => {
+    if (!debouncedCode || isLoading) return;
 
-    if (isProductAlreadySelected(product)) {
-      // Duplicado: cambiar color y resetear input, mantener color
-      setInputState('duplicate');
-      resetInputOnly();
+    // Error de red
+    if (isError) {
+      isShowingFeedback.current = true;
+      setScannerState({ type: 'error', reason: 'not_found' });
+      onChange('');
+      resetToIdle();
       return;
     }
 
-    // Éxito: cambiar color, agregar producto y resetear input
-    setInputState('success');
-    onProductSelect(product);
-    resetInputOnly();
-  }, [onProductSelect, isProductAlreadySelected, resetInputOnly]);
-
-  // Manejar input - resetear estado visual al escribir nuevo
-  const handleScannerInput = useCallback((inputValue: string) => {
-    onChange(inputValue);
-    
-    // Al empezar a escribir, volver a estado normal
-    if (inputValue.length > 0) {
-      setInputState('normal');
-      setShowResults(true);
-    } else {
-      setShowResults(false);
-      // NO resetear estado visual al vaciar, solo al escribir nuevo
+    // No encontrado
+    if (searchResults.length === 0) {
+      isShowingFeedback.current = true;
+      setScannerState({ type: 'error', reason: 'not_found' });
+      onChange('');
+      resetToIdle();
+      return;
     }
+
+    // Producto encontrado
+    const product = searchResults[0];
+
+    // Si ya procesamos este producto en este ciclo, no hacer nada
+    if (processedProductRef.current === product.id) {
+      return;
+    }
+
+    // Sin stock
+    if (product.stock <= 0) {
+      isShowingFeedback.current = true;
+      setScannerState({ type: 'error', reason: 'no_stock' });
+      onChange('');
+      resetToIdle();
+      return;
+    }
+
+    // Duplicado - verificar ANTES de agregar
+    if (isProductAlreadySelected(product)) {
+      isShowingFeedback.current = true;
+      setScannerState({ type: 'duplicate', productName: product.name });
+      onChange('');
+      resetToIdle();
+      return;
+    }
+
+    // Marcar como procesado ANTES de agregar
+    processedProductRef.current = product.id;
+
+    // Éxito
+    isShowingFeedback.current = true;
+    setScannerState({ type: 'success', productName: product.name });
+    onProductSelect(product);
+    onChange('');
+    resetToIdle();
+
+  }, [debouncedCode, searchResults, isLoading, isError, onProductSelect, isProductAlreadySelected, resetToIdle, onChange]);
+
+  // Capturar input del escáner
+  const handleScannerInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.value);
   }, [onChange]);
 
-  // Manejar blur - resetear estado visual al perder focus
-  const handleBlur = useCallback(() => {
-    setInputState('normal');
-  }, []);
-
-  // Manejar focus - asegurar que el estado se mantiene
-  const handleFocus = useCallback(() => {
-    // Solo resetear si el input está vacío
-    if (!value.length) {
-      setInputState('normal');
-    }
-  }, [value]);
-
-  // Manejar Enter de la pistola escáner
+  // Manejar Enter del escáner
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      e.stopPropagation();
-      
-      if (value.length > 0) {
-        if (searchResults.length > 0) {
-          handleProductSelect(searchResults[0]);
-        } else if (!isSearchingByCode && !isDebouncing && debouncedValue) {
-          // Error: no encontrado
-          setInputState('error');
-          resetInputOnly();
-        }
-      }
     }
-  }, [value, searchResults, handleProductSelect, isSearchingByCode, isDebouncing, debouncedValue, resetInputOnly]);
+  }, []);
 
-  // Focus inteligente - solo si no hay otros inputs activos
+  // Auto-focus inteligente
   useEffect(() => {
+    const hasOpenModal = () => {
+      return document.querySelector('[role="dialog"]') !== null ||
+             document.querySelector('.modal') !== null ||
+             document.querySelector('[data-state="open"]') !== null;
+    };
+
     const focusInput = () => {
-      if (inputRef.current) {
-        // Solo hacer focus si:
-        // 1. No hay ningún elemento con focus actualmente, O
-        // 2. El elemento con focus es el body (sin focus específico), O  
-        // 3. El elemento con focus ya es este input
+      if (inputRef.current && !hasOpenModal()) {
         const activeElement = document.activeElement;
-        const shouldFocus = !activeElement || 
-                          activeElement === document.body || 
-                          activeElement === inputRef.current;
-        
-        if (shouldFocus) {
+        if (!activeElement || activeElement === document.body) {
           inputRef.current.focus();
         }
       }
     };
-    
-    // Focus inicial inmediato
+
     focusInput();
-    
-    // Focus periódico más inteligente
-    const focusInterval = setInterval(() => {
-      // Solo continuar el auto-focus si no hay modales/dialogs abiertos
-      const hasOpenModal = document.querySelector('[role="dialog"]') !== null ||
-                          document.querySelector('.modal') !== null ||
-                          document.querySelector('[data-state="open"]') !== null;
-      
-      if (!hasOpenModal) {
-        focusInput();
-      }
-    }, 200); // Aumentamos el intervalo para ser menos agresivo
-    
+
+    const focusInterval = setInterval(focusInput, 500);
+
     return () => clearInterval(focusInterval);
   }, []);
-
-  // Error - cambiar estado y resetear
-  useEffect(() => {
-    if (hasCodeSearchError && debouncedValue.trim()) {
-      setInputState('error');
-      resetInputOnly();
-    }
-  }, [hasCodeSearchError, debouncedValue, resetInputOnly]);
-
-  // Auto-selección inmediata
-  useEffect(() => {
-    if (searchResults.length === 1 && !isSearchingByCode && !isDebouncing && debouncedValue && !hasCodeSearchError) {
-      const product = searchResults[0];
-      if (product.stock > 0) {
-        handleProductSelect(product);
-      }
-    }
-  }, [searchResults, isSearchingByCode, isDebouncing, debouncedValue, handleProductSelect, hasCodeSearchError]);
-
-  const shouldShowResults = showResults && value.length > 0 && debouncedValue.length > 0 && !isSearchingByCode && !isDebouncing;
-  const isLoading = isSearchingByCode || isDebouncing;
 
   // Cleanup
   useEffect(() => {
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
+      if (stateResetTimer.current) clearTimeout(stateResetTimer.current);
     };
   }, []);
 
-  // Placeholder dinámico basado en el estado
-  const getDynamicPlaceholder = () => {
-    switch (inputState) {
+  // Renderizar indicador según estado
+  const renderIndicator = () => {
+    switch (scannerState.type) {
+      case 'idle':
+        return (
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className="bg-indigo-600 rounded-xl p-3">
+                <ScanBarcode className="w-8 h-8 text-white" />
+              </div>
+              <div className="absolute inset-0 bg-indigo-500/20 blur-lg rounded-xl animate-pulse" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white">Listo para escanear</h3>
+              <p className="text-slate-300 text-sm">Apunta el escáner al código de barras</p>
+            </div>
+          </div>
+        );
+
+      case 'scanning':
+        return (
+          <div className="flex items-center gap-4">
+            <div className="bg-blue-600 rounded-xl p-3">
+              <Loader2 className="w-8 h-8 text-white animate-spin" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white">Buscando producto...</h3>
+              <p className="text-slate-300 text-sm">Verificando en el inventario</p>
+            </div>
+          </div>
+        );
+
       case 'success':
-        return '✅ Producto agregado - Escanear siguiente...';
+        return (
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className="bg-emerald-500 rounded-xl p-3">
+                <CheckCircle2 className="w-8 h-8 text-white" />
+              </div>
+              <div className="absolute inset-0 bg-emerald-500/30 blur-lg rounded-xl" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-xl font-bold text-emerald-400">✓ Producto agregado</h3>
+              <p className="text-emerald-300 text-sm font-medium">{scannerState.productName}</p>
+            </div>
+          </div>
+        );
+
       case 'error':
-        return '❌ Error - Producto no encontrado';
+        return (
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className="bg-red-600 rounded-xl p-3">
+                {scannerState.reason === 'no_stock' ? (
+                  <Package className="w-8 h-8 text-white" />
+                ) : (
+                  <XCircle className="w-8 h-8 text-white" />
+                )}
+              </div>
+              <div className="absolute inset-0 bg-red-500/30 blur-lg rounded-xl" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-red-400">
+                {scannerState.reason === 'not_found' 
+                  ? '✗ Producto no encontrado' 
+                  : '✗ Sin stock disponible'}
+              </h3>
+              <p className="text-red-300 text-sm">
+                {scannerState.reason === 'not_found'
+                  ? 'Verifica el código e intenta nuevamente'
+                  : 'El producto no tiene unidades disponibles'}
+              </p>
+            </div>
+          </div>
+        );
+
       case 'duplicate':
-        return '⚠️ Producto ya agregado - Escanear otro...';
-      default:
-        return placeholder;
+        return (
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className="bg-orange-500 rounded-xl p-3">
+                <AlertTriangle className="w-8 h-8 text-white" />
+              </div>
+              <div className="absolute inset-0 bg-orange-500/30 blur-lg rounded-xl" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-xl font-bold text-orange-400">⚠ Ya está en la lista</h3>
+              <p className="text-orange-300 text-sm font-medium">{scannerState.productName}</p>
+            </div>
+          </div>
+        );
     }
   };
-  
-  const getInputStyles = () => {
-    switch (inputState) {
+
+  const getContainerStyles = () => {
+    switch (scannerState.type) {
       case 'success':
-        return 'bg-green-900 border-green-600 ring-2 ring-green-400';
+        return 'bg-emerald-500/10 border-emerald-500/50 shadow-emerald-500/20';
       case 'error':
-        return 'bg-red-900 border-red-600 ring-2 ring-red-400';
+        return 'bg-red-500/10 border-red-500/50 shadow-red-500/20';
       case 'duplicate':
-        return 'bg-orange-900 border-orange-600 ring-2 ring-orange-400';
+        return 'bg-orange-500/10 border-orange-500/50 shadow-orange-500/20';
+      case 'scanning':
+        return 'bg-blue-500/10 border-blue-500/50 shadow-blue-500/20';
       default:
-        return 'bg-slate-800 border-slate-700';
+        return 'bg-slate-800/50 border-slate-700 shadow-xl';
     }
   };
 
   return (
-    <div className={`relative ${className}`}>
-      <div className="relative">
-        {isLoading ? (
-          <Loader2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4 animate-spin" />
-        ) : (
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-        )}
-        
-        <input
-          ref={inputRef}
-          type="text"
-          value={value}
-          onChange={(e) => handleScannerInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onBlur={handleBlur}
-          onFocus={handleFocus}
-          className={`w-full pl-10 pr-4 py-2.5 text-white placeholder-slate-300 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition-all ${getInputStyles()}`}
-          placeholder={getDynamicPlaceholder()}
-          autoComplete="off"
-          autoFocus
-        />
+    <div className={`w-full ${className}`}>
+      {/* Input oculto para capturar escáner */}
+      <input
+        ref={inputRef}
+        type="text"
+        value={value}
+        onChange={handleScannerInput}
+        onKeyDown={handleKeyDown}
+        className="sr-only"
+        aria-hidden="true"
+        autoComplete="off"
+        autoFocus
+      />
+
+      {/* Indicador visual */}
+      <div className={`p-6 rounded-xl border-2 transition-all duration-300 shadow-2xl ${getContainerStyles()}`}>
+        {renderIndicator()}
       </div>
-
-      {/* Dropdown simple */}
-      {shouldShowResults && (
-        <div className="absolute z-20 w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-2xl max-h-56 overflow-y-auto">
-          {hasCodeSearchError ? (
-            <div className="p-4 text-red-400 text-center text-sm">Error</div>
-          ) : searchResults.length === 0 ? (
-            <div className="p-4 text-slate-400 text-center text-sm">No encontrado</div>
-          ) : (
-            searchResults.map((product) => {
-              const hasNoStock = product.stock <= 0;
-
-              return (
-                <button
-                  key={product.id}
-                  type="button"
-                  onClick={() => handleProductSelect(product)}
-                  disabled={hasNoStock}
-                  className={`w-full text-left px-4 py-2 border-b border-slate-700 last:border-b-0 transition-colors ${
-                    hasNoStock
-                      ? 'cursor-not-allowed opacity-50'
-                      : 'hover:bg-slate-700 text-white'
-                  }`}
-                >
-                  <div className="flex justify-between items-center">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm truncate">{product.name}</div>
-                      <div className="flex items-center gap-3 text-xs text-slate-400">
-                        <span>#{product.code}</span>
-                        <span>Stock: {product.stock}</span>
-                      </div>
-                    </div>
-                    <div className="text-emerald-400 font-semibold">${product.price.toFixed(2)}</div>
-                  </div>
-                </button>
-              );
-            })
-          )}
-        </div>
-      )}
     </div>
   );
 }

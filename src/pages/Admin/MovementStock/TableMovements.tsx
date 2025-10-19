@@ -16,8 +16,9 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-import { useGetAllMovements, type Movement } from "@/hooks/admin/MovementStock/useGetAllMovements";
+import { useGetAllMovements } from "@/hooks/admin/MovementStock/useGetAllMovements";
 import { usePointSaleGetAll } from "@/hooks/pointSale/usePointSaleGetAll";
+import type { Movement } from "@/hooks/admin/MovementStock/movementStockType";
 
 const TableMovements = () => {
   // Paginación

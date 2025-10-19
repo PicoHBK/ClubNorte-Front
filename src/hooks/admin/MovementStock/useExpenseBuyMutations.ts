@@ -8,11 +8,13 @@ import type { ExpenseBuyCreate } from "./movementStockType";
 const QUERIES_TO_INVALIDATE = [
   "getAllExpenseBuys",
   "getExpenseBuyById",
+  "getExpenseBuysByDate",
   "getAllProducts",
   "ProductGetById",
   "searchProductsByName",
   "searchProductsByCode",
   "ProductsGetByCategory",
+  "ExpenseGetById",
 ];
 
 interface ApiSuccessResponse<T> {
@@ -26,7 +28,7 @@ const createExpenseBuy = async (
   formData: ExpenseBuyCreate
 ): Promise<ApiSuccessResponse<string>> => {
   const { data } = await apiClubNorte.post(
-    "/api/v1/expense_buy",
+    "/api/v1/expense_buy/create",
     formData,
     { withCredentials: true }
   );
@@ -38,7 +40,7 @@ const deleteExpenseBuy = async (
   id: number
 ): Promise<ApiSuccessResponse<string>> => {
   const { data } = await apiClubNorte.delete(
-    `/api/v1/expense_buy/${id}`,
+    `/api/v1/expense_buy/delete/${id}`,
     { withCredentials: true }
   );
   return data;

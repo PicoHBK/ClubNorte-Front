@@ -1,482 +1,471 @@
-import { useState, useEffect, type JSX, type ReactNode } from "react";
-import {
-  ChevronDown,
-  Settings,
-  User,
-  LogOut,
-  type LucideIcon,
-  DollarSign,
-  Menu,
-  X,
-  PlusCircle,
-  ListOrdered,
-  Package,
-  Boxes,
-  Wallet,
-  DoorOpen,
-  Grid,
-  PlusSquare,
-  Volleyball,
-} from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
-import TableProductPointSale from "./ProductPoinSale/TableProductPointSale";
-import usePointSaleStore from "@/store/usePointSaleStore";
-import RegisterPointSale from "./Register/RegisterPointSale";
-import IncomeCreate from "./Income/IncomeCreate";
-import TableIncomes from "./Income/TableIncomes";
-import FormCreateSportCourt from "./SportCourt/FromCreateSportCourt";
-import TableSportCourt from "./SportCourt/TableSportCourt";
-import IncomeSportCourtCreate from "./IncomeSportCourt/IncomeSportCourtCreate";
-import TableIncomesSportCourt from "./IncomeSportCourt/TableIncomesSportCourt";
+import React, { useState } from "react";
+import { usePointSaleGetAll } from "@/hooks/pointSale/usePointSaleGetAll";
+import { useGetProductById } from "@/hooks/admin/Product/useGetProductById";
+import SuccessMessage from "@/components/generic/SuccessMessage";
+import { getApiError } from "@/utils/apiError";
+import { Package, Warehouse, Store, ArrowRight, ArrowLeftRight, ChevronLeft } from "lucide-react";
+import { useMovementStockMutations } from "@/hooks/admin/MovementStock/useMovementStockMutations";
 
-// Definición de tipos para la configuración
-interface Action {
-  id: string;
-  name: string;
-  icon: LucideIcon;
-  component: () => JSX.Element;
+interface FormMovementStockProps {
+  productId: number;
 }
 
-interface Model {
-  id: string;
-  name: string;
-  icon: LucideIcon;
-  color: string;
-  actions: Action[];
-}
-
-interface Section {
-  id: string;
-  name: string;
-  models: Model[];
-}
-
-interface MenuButtonProps {
-  onClick: () => void;
-  children: ReactNode;
-  active?: boolean;
-  className?: string;
-}
-
-const PointSale = () => {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+const FormMovementStock: React.FC<FormMovementStockProps> = ({ productId }) => {
+  const { pointSales, isLoading: isLoadingPoints } = usePointSaleGetAll();
+  const {
+    product,
+    isLoading: isLoadingProduct,
+    isError,
+  } = useGetProductById(productId);
 
   const {
-    login,
-    logout,
-    isAuthenticated,
-    isLoading,
-    error,
-  } = usePointSaleStore();
+    createMovementStock,
+    isCreating,
+    isCreated,
+    createError,
+    resetCreateState
+  } = useMovementStockMutations();
 
-  // Login automático cuando hay un ID en los params
-  useEffect(() => {
-    if (id) {
-      login(Number(id), ""); // <-- password vacío si no se necesita
+  // Estados para depósito → puntos de venta
+  const [selectedPoints, setSelectedPoints] = useState<{ id: number; amount: number }[]>([]);
+  const [ignoreStockDeposit, setIgnoreStockDeposit] = useState(false);
+
+  // Estados para punto de venta → depósito/otro punto
+  const [fromPointId, setFromPointId] = useState<number | "">("");
+  const [toPointId, setToPointId] = useState<number | "">("");
+  const [moveAmount, setMoveAmount] = useState<number>(0);
+  const [ignoreStockPoints, setIgnoreStockPoints] = useState(false);
+
+  // Estado para controlar qué método está activo
+  const [activeMethod, setActiveMethod] = useState<"selection" | "deposit" | "points">("selection");
+
+  // Función para resetear todos los estados del formulario
+  const resetAllStates = () => {
+    setSelectedPoints([]);
+    setIgnoreStockDeposit(false);
+    setFromPointId("");
+    setToPointId("");
+    setMoveAmount(0);
+    setIgnoreStockPoints(false);
+    setActiveMethod("selection");
+  };
+
+  // Obtener mensaje de error de la mutación
+  const mutationApiError = getApiError(createError);
+
+  const handleCheckboxChange = (pointId: number) => {
+    setSelectedPoints((prev) => {
+      const exists = prev.find((p) => p.id === pointId);
+      if (exists) return prev.filter((p) => p.id !== pointId);
+      return [...prev, { id: pointId, amount: 0 }];
+    });
+  };
+
+  const handleAmountChange = (pointId: number, amount: number) => {
+    setSelectedPoints((prev) =>
+      prev.map((p) => (p.id === pointId ? { ...p, amount: amount >= 0 ? amount : 0 } : p))
+    );
+  };
+
+  const handleMoveFromDeposit = async () => {
+    if (!product) return;
+
+    const total = selectedPoints.reduce((sum, p) => sum + p.amount, 0);
+
+    if (total === 0) {
+      alert("Debes asignar al menos una cantidad mayor a 0.");
+      return;
     }
-  }, [id, login]);
 
-  const config: { sections: Section[] } = {
-  sections: [
-    {
-      id: "Ingreso",
-      name: "Ingreso",
-      models: [
-        {
-          id: "income",
-          name: "Ingreso",
-          icon: DollarSign,
-          color: "text-green-500",
-          actions: [
-            {
-              id: "crear-ingreso",
-              name: "Crear Ingreso",
-              icon: PlusCircle,
-              component: IncomeCreate,
-            },
-            {
-              id: "list-ingreso",
-              name: "Lista de Ingresos",
-              icon: ListOrdered,
-              component: TableIncomes,
-            },
-            {
-              id: "crear-ingreso-cancha",
-              name: "Crear Ingreso Cancha",
-              icon: PlusCircle,
-              component: IncomeSportCourtCreate,
-            },
-            {
-              id: "list-ingreso-cancha",
-              name: "Lista de Ingresos Cancha",
-              icon: ListOrdered,
-              component: TableIncomesSportCourt,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      id: "Productos",
-      name: "Gestión de Productos",
-      models: [
-        {
-          id: "productos",
-          name: "Productos",
-          icon: Package,
-          color: "text-blue-500",
-          actions: [
-            {
-              id: "listar",
-              name: "Listar Productos",
-              icon: Boxes,
-              component: TableProductPointSale,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      id: "Caja",
-      name: "Caja e Informes",
-      models: [
-        {
-          id: "caja",
-          name: "Caja",
-          icon: Wallet,
-          color: "text-purple-500",
-          actions: [
-            {
-              id: "abrir-cerrar",
-              name: "Abrir / Cerrar Caja",
-              icon: DoorOpen,
-              component: RegisterPointSale,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      id: "canchas",
-      name: "Canchas",
-      models: [
-        {
-          id: "canchas",
-          name: "Canchas",
-          icon: Volleyball,
-          color: "text-orange-500",
-          actions: [
-            {
-              id: "crear-cancha",
-              name: "Crear Cancha",
-              icon: PlusSquare,
-              component: FormCreateSportCourt,
-            },
-            {
-              id: "listar-cancha",
-              name: "Lista de Canchas",
-              icon: Grid,
-              component: TableSportCourt,
-            },
-          ],
-        },
-      ],
-    },
-  ],
-}
+    if (!ignoreStockDeposit && total > (product?.stock_deposit?.stock ?? 0)) {
+      alert("No puedes mover más stock del disponible en depósito.");
+      return;
+    }
 
-
-  const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [disclosuresOpen, setDisclosuresOpen] = useState<
-    Record<string, boolean>
-  >({});
-
-  // Todas las acciones aplanadas
-  const allActions = config.sections.flatMap((s) =>
-    s.models.flatMap((m) =>
-      m.actions.map((a) => ({ ...a, modelName: m.name, sectionName: s.name }))
-    )
-  );
-
-  const selectedAction = allActions.find((a) => a.id === selectedActionId);
-
-  useEffect(() => {
-    if (allActions.length > 0) {
-      setSelectedActionId(allActions[0].id);
-      // Abrir el primer disclosure por defecto
-      const firstModelId = config.sections[0]?.models[0]?.id;
-      if (firstModelId) {
-        setDisclosuresOpen({ [firstModelId]: true });
+    for (const point of selectedPoints) {
+      if (point.amount > 0) {
+        createMovementStock({
+          amount: point.amount,
+          from_id: 1,
+          from_type: "deposit",
+          ignore_stock: ignoreStockDeposit,
+          product_id: product.id,
+          to_id: point.id,
+          to_type: "point_sale",
+        }, {
+          onSuccess: () => {
+            resetAllStates();
+          }
+        });
       }
     }
-  }, []);
-
-  const toggleDisclosure = (modelId: string) => {
-    setDisclosuresOpen((prev) => ({
-      ...prev,
-      [modelId]: !prev[modelId],
-    }));
   };
 
-  const handleActionSelect = (actionId: string) => {
-    setSelectedActionId(actionId);
-    setSidebarOpen(false);
+  const handleMoveBetweenPoints = () => {
+    if (!product) return;
+
+    if (!fromPointId || toPointId === "") {
+      alert("Debes seleccionar un punto de venta de origen y destino.");
+      return;
+    }
+
+    if (fromPointId === toPointId) {
+      alert("El origen y destino no pueden ser el mismo.");
+      return;
+    }
+
+    const fromStock =
+      product?.stock_point_sales?.find((p) => p.id === fromPointId)?.stock ?? 0;
+
+    if (moveAmount <= 0) {
+      alert("La cantidad debe ser mayor a 0.");
+      return;
+    }
+
+    if (moveAmount > fromStock && !ignoreStockPoints) {
+      alert("No puedes mover más stock del disponible en el punto de venta de origen.");
+      return;
+    }
+
+    createMovementStock({
+      amount: moveAmount,
+      from_id: fromPointId,
+      from_type: "point_sale",
+      ignore_stock: ignoreStockPoints,
+      product_id: product.id,
+      to_id: toPointId === 0 ? 1 : toPointId,
+      to_type: toPointId === 0 ? "deposit" : "point_sale",
+    }, {
+      onSuccess: () => {
+        resetAllStates();
+      }
+    });
   };
 
-  // Botón reutilizable para el menú
-  const MenuButton = ({
-    onClick,
-    children,
-    active = false,
-    className = "",
-  }: MenuButtonProps) => (
-    <button
-      onClick={onClick}
-      className={`flex items-center w-full px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 ${
-        active
-          ? "bg-indigo-600 text-white shadow-lg scale-105"
-          : "text-slate-300 hover:bg-white/10 hover:text-white hover:scale-102"
-      } ${className}`}
-    >
-      {children}
-    </button>
-  );
-
-  // Manejo del botón "Salir"
-  const handleLogout = async () => {
-    await logout();
-    navigate("/admin"); // Redirige a /admin
+  const getStockForPointSale = (pointSaleId: number): number => {
+    return product?.stock_point_sales?.find((ps) => ps.id === pointSaleId)?.stock ?? 0;
   };
 
-  // Si está cargando el login automático
-  if (isLoading) {
+  if (isCreated) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-600 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-white text-lg">Cargando...</p>
-        </div>
-      </div>
+      <SuccessMessage
+        title="¡Movimiento Realizado!"
+        description="El movimiento de stock ha sido realizado exitosamente. Los inventarios han sido actualizados."
+        primaryButton={{
+          text: "Realizar Otro Movimiento",
+          onClick: () => {
+            resetCreateState();
+            resetAllStates();
+          },
+          variant: 'indigo'
+        }}
+      />
     );
   }
 
-  // Si ocurre error en el login
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
-        <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-8 max-w-md w-full text-center shadow-2xl">
-          <div className="bg-red-500/20 rounded-full p-4 w-16 h-16 mx-auto mb-4">
-            <X className="w-8 h-8 text-red-400" />
-          </div>
-          <p className="mb-6 text-red-300 text-lg">{error}</p>
-          <button
-            onClick={() => navigate("/admin")}
-            className="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl hover:scale-105 transition-all duration-300 font-medium shadow-lg"
-          >
-            Volver al Admin
-          </button>
-        </div>
-      </div>
-    );
+  if (isLoadingPoints || isLoadingProduct) {
+    return <div className="text-slate-300 text-center">Cargando información...</div>;
   }
 
-  // Si no está autenticado después del intento
-  if (!isAuthenticated) {
+  if (isError || !product) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
-        <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl p-8 max-w-md w-full text-center shadow-2xl">
-          <div className="bg-yellow-500/20 rounded-full p-4 w-16 h-16 mx-auto mb-4">
-            <User className="w-8 h-8 text-yellow-400" />
-          </div>
-          <p className="mb-6 text-white">No se pudo iniciar sesión en el punto de venta.</p>
-          <button
-            onClick={() => navigate("/admin")}
-            className="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl hover:scale-105 transition-all duration-300 font-medium shadow-lg"
-          >
-            Volver al Admin
-          </button>
-        </div>
+      <div className="text-red-500 text-center">
+        Ocurrió un error. Contacte al administrador.
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Botón de menú para móvil y tablet */}
-      <button
-        className="lg:hidden fixed top-4 left-4 z-50 p-3 rounded-xl bg-white/10 backdrop-blur-lg text-white border border-white/20 hover:bg-white/20 transition-all duration-300 shadow-2xl"
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-      >
-        {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-      </button>
+    <div className="space-y-6">
+      <h2 className="text-xl font-bold text-white">Mover Stock</h2>
 
-      {/* Overlay para móvil y tablet */}
-      {sidebarOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-30 transition-all duration-300"
-          onClick={() => setSidebarOpen(false)}
-        />
+      {mutationApiError && (
+        <div className="bg-red-500/20 border border-red-500/50 rounded-md p-3 mb-4">
+          <p className="text-red-400 text-sm text-center">
+            {mutationApiError.message}
+          </p>
+          <button
+            type="button"
+            onClick={() => resetCreateState()}
+            className="mt-2 w-full px-3 bg-red-600 hover:bg-red-500 text-white font-medium py-1.5 rounded-md text-sm transition"
+          >
+            ✕ Cerrar Error
+          </button>
+        </div>
       )}
 
-      {/* Sidebar */}
-      <div
-        className={`${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } 
-        lg:translate-x-0 transform fixed lg:static inset-y-0 left-0 z-40 w-80 bg-white/10 backdrop-blur-lg border-r border-white/20 text-slate-300 flex flex-col transition-all duration-300 ease-in-out shadow-2xl`}
-      >
-        {/* Header del sidebar */}
-        <div className="p-6 border-b border-white/20">
-          <h1 className="text-2xl font-bold text-white mb-2 bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-600 bg-clip-text">
-            Panel de Control
-          </h1>
-          <p className="text-sm text-slate-300">Gestión de punto de venta</p>
-        </div>
-
-        {/* Navegación */}
-        <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
-          {config.sections.map((section) => (
-            <div key={section.id} className="space-y-3">
-              <div className="flex items-center px-2">
-                <div className="h-px bg-gradient-to-r from-indigo-500/50 via-purple-500/30 to-emerald-500/50 flex-1"></div>
-                <h2 className="px-3 text-xs font-semibold text-slate-200 uppercase tracking-wider">
-                  {section.name}
-                </h2>
-                <div className="h-px bg-gradient-to-r from-emerald-500/50 via-purple-500/30 to-indigo-500/50 flex-1"></div>
+      {/* Pantalla de selección de método */}
+      {activeMethod === "selection" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Opción 1: Depósito → Puntos de Venta */}
+          <button
+            onClick={() => setActiveMethod("deposit")}
+            className="group relative overflow-hidden rounded-xl border-2 border-slate-700 bg-gradient-to-br from-indigo-900/30 to-slate-800/50 p-8 hover:border-indigo-500 hover:from-indigo-900/50 hover:to-slate-800/70 transition-all duration-300 shadow-xl hover:shadow-indigo-500/20"
+          >
+            <div className="flex flex-col items-center gap-6">
+              <div className="relative">
+                <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-xl"></div>
+                <div className="relative bg-indigo-600 rounded-full p-6">
+                  <Warehouse className="w-12 h-12 text-white" />
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 text-slate-300">
+                <Warehouse className="w-6 h-6 text-indigo-400" />
+                <ArrowRight className="w-6 h-6 text-slate-500" />
+                <Store className="w-6 h-6 text-emerald-400" />
               </div>
 
-              {section.models.map((model) => (
-                <div key={model.id} className="space-y-2">
-                  <MenuButton
-                    onClick={() => toggleDisclosure(model.id)}
-                    active={selectedAction?.modelName === model.name}
-                    className="justify-between group"
+              <div className="text-center">
+                <h3 className="text-xl font-bold text-white mb-2">
+                  Depósito → Puntos de Venta
+                </h3>
+                <p className="text-slate-400 text-sm">
+                  Distribuir stock desde el depósito central hacia los puntos de venta
+                </p>
+              </div>
+
+              <div className="mt-2 px-4 py-2 bg-slate-700/50 rounded-lg">
+                <p className="text-slate-300 text-sm flex items-center gap-2">
+                  <Package className="w-4 h-4 text-indigo-400" />
+                  Stock en depósito: <span className="font-bold text-indigo-400">{product?.stock_deposit?.stock ?? 0}</span>
+                </p>
+              </div>
+            </div>
+          </button>
+
+          {/* Opción 2: Entre Puntos de Venta */}
+          <button
+            onClick={() => setActiveMethod("points")}
+            className="group relative overflow-hidden rounded-xl border-2 border-slate-700 bg-gradient-to-br from-emerald-900/30 to-slate-800/50 p-8 hover:border-emerald-500 hover:from-emerald-900/50 hover:to-slate-800/70 transition-all duration-300 shadow-xl hover:shadow-emerald-500/20"
+          >
+            <div className="flex flex-col items-center gap-6">
+              <div className="relative">
+                <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl"></div>
+                <div className="relative bg-emerald-600 rounded-full p-6">
+                  <ArrowLeftRight className="w-12 h-12 text-white" />
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 text-slate-300">
+                <Store className="w-6 h-6 text-emerald-400" />
+                <ArrowLeftRight className="w-6 h-6 text-slate-500" />
+                <Store className="w-6 h-6 text-indigo-400" />
+              </div>
+
+              <div className="text-center">
+                <h3 className="text-xl font-bold text-white mb-2">
+                  Entre Puntos de Venta
+                </h3>
+                <p className="text-slate-400 text-sm">
+                  Transferir stock entre puntos de venta o devolver al depósito
+                </p>
+              </div>
+
+              <div className="mt-2 px-4 py-2 bg-slate-700/50 rounded-lg">
+                <p className="text-slate-300 text-sm flex items-center gap-2">
+                  <Store className="w-4 h-4 text-emerald-400" />
+                  Puntos disponibles: <span className="font-bold text-emerald-400">{pointSales.length}</span>
+                </p>
+              </div>
+            </div>
+          </button>
+        </div>
+      )}
+
+      {/* Método 1: Depósito → Puntos de Venta */}
+      {activeMethod === "deposit" && (
+        <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-indigo-600 rounded-lg p-3">
+                <Warehouse className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Depósito → Puntos de Venta</h3>
+                <p className="text-slate-400 text-sm">Distribuir stock desde el depósito</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveMethod("selection")}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Volver
+            </button>
+          </div>
+
+          <div className="bg-slate-700/50 rounded-lg p-4">
+            <p className="text-slate-300 flex items-center gap-2">
+              <Package className="w-5 h-5 text-emerald-400" />
+              Stock disponible en depósito:{" "}
+              <span className="font-bold text-emerald-400 text-lg">
+                {product?.stock_deposit?.stock ?? 0}
+              </span>
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {pointSales.map((point) => (
+              <div
+                key={point.id}
+                className="flex items-center gap-4 border border-slate-600 rounded-lg p-4 bg-slate-700/30 hover:bg-slate-700/50 transition"
+              >
+                <input
+                  type="checkbox"
+                  checked={!!selectedPoints.find((p) => p.id === point.id)}
+                  onChange={() => handleCheckboxChange(point.id)}
+                  disabled={isCreating}
+                  className="w-5 h-5 rounded"
+                />
+                <div className="flex-1">
+                  <span className="text-slate-200 font-medium">{point.name}</span>
+                  <span className="text-xs text-slate-400 flex items-center gap-1 mt-1">
+                    <Package className="w-3 h-3" />
+                    Stock actual: {getStockForPointSale(point.id)}
+                  </span>
+                </div>
+                <input
+                  type="number"
+                  min={0}
+                  className="w-28 px-3 py-2 rounded-lg bg-slate-800 text-white border border-slate-600 disabled:opacity-50 font-medium"
+                  disabled={!selectedPoints.find((p) => p.id === point.id) || isCreating}
+                  value={selectedPoints.find((p) => p.id === point.id)?.amount || ""}
+                  onChange={(e) => handleAmountChange(point.id, Number(e.target.value))}
+                  placeholder="0"
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-3 bg-slate-700/30 rounded-lg p-4">
+            <input
+              type="checkbox"
+              checked={ignoreStockDeposit}
+              onChange={(e) => setIgnoreStockDeposit(e.target.checked)}
+              disabled={isCreating}
+              className="w-5 h-5 rounded"
+            />
+            <label className="text-slate-300 text-sm">
+              Ignorar validación de stock (permitir stock negativo en depósito)
+            </label>
+          </div>
+
+          <button
+            onClick={handleMoveFromDeposit}
+            disabled={isCreating}
+            className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-lg disabled:opacity-50 flex items-center justify-center gap-3 shadow-lg hover:shadow-indigo-500/30 transition-all"
+          >
+            <Warehouse className="w-6 h-6" />
+            {isCreating ? "Procesando..." : "Mover desde Depósito"}
+            <ArrowRight className="w-6 h-6" />
+          </button>
+        </div>
+      )}
+
+      {/* Método 2: Entre Puntos de Venta */}
+      {activeMethod === "points" && (
+        <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-emerald-600 rounded-lg p-3">
+                <ArrowLeftRight className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Entre Puntos de Venta</h3>
+                <p className="text-slate-400 text-sm">Transferir stock entre ubicaciones</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveMethod("selection")}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Volver
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {/* Origen */}
+            <div>
+              <label className="block text-slate-300 font-medium mb-2 flex items-center gap-2">
+                <Store className="w-4 h-4 text-emerald-400" />
+                Punto de Origen
+              </label>
+              <select
+                className="w-full px-4 py-3 rounded-lg bg-slate-700 text-white border border-slate-600 disabled:opacity-50 font-medium"
+                value={fromPointId}
+                onChange={(e) => setFromPointId(Number(e.target.value))}
+                disabled={isCreating}
+              >
+                <option value="">Seleccione punto de venta de origen</option>
+                {product?.stock_point_sales?.map((ps) => (
+                  <option key={ps.id} value={ps.id}>
+                    {ps.name} (Stock: {ps.stock})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Destino */}
+            <div>
+              <label className="block text-slate-300 font-medium mb-2 flex items-center gap-2">
+                <Store className="w-4 h-4 text-indigo-400" />
+                Punto de Destino
+              </label>
+              <select
+                className="w-full px-4 py-3 rounded-lg bg-slate-700 text-white border border-slate-600 disabled:opacity-50 font-medium"
+                value={toPointId}
+                onChange={(e) => setToPointId(Number(e.target.value))}
+                disabled={isCreating}
+              >
+                <option value="">Seleccione punto de destino</option>
+                <option value={0}>
+                  🏢 Depósito (Stock: {product?.stock_deposit?.stock ?? 0})
+                </option>
+                {pointSales.map((ps) => (
+                  <option
+                    key={ps.id}
+                    value={ps.id}
+                    disabled={ps.id === fromPointId}
                   >
-                    <div className="flex items-center">
-                      <div className="p-2 rounded-lg bg-white/10 mr-3 group-hover:scale-110 transition-transform">
-                        <model.icon
-                          className={`h-5 w-5 ${model.color || "text-slate-400"}`}
-                        />
-                      </div>
-                      <span className="font-medium">{model.name}</span>
-                    </div>
-                    <ChevronDown
-                      className={`h-5 w-5 transition-transform duration-300 ${
-                        disclosuresOpen[model.id] ? "rotate-180" : ""
-                      }`}
-                    />
-                  </MenuButton>
-
-                  {disclosuresOpen[model.id] && (
-                    <div className="ml-4 pl-4 border-l-2 border-white/20 space-y-1 animate-fadeIn">
-                      {model.actions.map((action) => (
-                        <MenuButton
-                          key={action.id}
-                          onClick={() => handleActionSelect(action.id)}
-                          active={selectedActionId === action.id}
-                          className="text-sm group"
-                        >
-                          <div className="flex items-center">
-                            <div className="p-1.5 rounded-md bg-white/5 mr-3 group-hover:scale-110 transition-transform">
-                              <action.icon className="h-4 w-4" />
-                            </div>
-                            {action.name}
-                          </div>
-                        </MenuButton>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+                    {ps.name} (Stock: {getStockForPointSale(ps.id)})
+                  </option>
+                ))}
+              </select>
             </div>
-          ))}
-        </nav>
 
-        {/* Footer del sidebar */}
-        <div className="p-4 border-t border-white/20 space-y-2">
-          <MenuButton onClick={() => {}} className="group">
-            <div className="p-2 rounded-lg bg-white/10 mr-3 group-hover:scale-110 transition-transform">
-              <Settings className="h-5 w-5 text-slate-400" />
-            </div>
-            <span>Configuración</span>
-          </MenuButton>
-
-          <MenuButton onClick={handleLogout} className="group hover:bg-red-500/20">
-            <div className="p-2 rounded-lg bg-red-500/20 mr-3 group-hover:scale-110 transition-transform">
-              <LogOut className="h-5 w-5 text-red-400" />
-            </div>
-            <span>Salir</span>
-          </MenuButton>
-        </div>
-      </div>
-
-      {/* Contenido principal */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="bg-white/10 backdrop-blur-lg border-b border-white/20 shadow-xl">
-          <div className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-            <div className="flex items-center justify-between">
-              <div className="min-w-0 flex-1">
-                <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-white truncate">
-                  {selectedAction
-                    ? `${selectedAction.sectionName} > ${selectedAction.modelName}`
-                    : "Panel de Control"}
-                </h2>
-                {selectedAction && (
-                  <p className="text-sm text-slate-300 mt-1">
-                    {selectedAction.name}
-                  </p>
-                )}
-              </div>
-              <div className="ml-4 hidden sm:block">
-                <div className="flex items-center space-x-2">
-                  <div className="h-2 w-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-sm text-slate-300">En línea</span>
-                </div>
-              </div>
+            {/* Cantidad */}
+            <div>
+              <label className="block text-slate-300 font-medium mb-2 flex items-center gap-2">
+                <Package className="w-4 h-4 text-slate-400" />
+                Cantidad a Transferir
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={moveAmount}
+                onChange={(e) => setMoveAmount(Number(e.target.value))}
+                className="w-full px-4 py-3 rounded-lg bg-slate-700 text-white border border-slate-600 disabled:opacity-50 font-medium text-lg"
+                disabled={isCreating}
+                placeholder="0"
+              />
             </div>
           </div>
-        </header>
 
-        {/* Panel de contenido */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          {selectedAction ? (
-            <div className="h-full">
-              <div className="h-full bg-white/5 backdrop-blur-sm border border-white/20 rounded-2xl shadow-2xl overflow-hidden">
-                <div className="h-full p-4 sm:p-6 lg:p-8">
-                  <selectedAction.component />
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="h-full flex items-center justify-center">
-              <div className="text-center max-w-md mx-auto">
-                <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-2xl">
-                  <div className="bg-gradient-to-r from-indigo-500/20 via-purple-500/10 to-emerald-500/20 rounded-full p-6 w-24 h-24 mx-auto mb-6">
-                    <User className="h-12 w-12 text-slate-300 mx-auto" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-white mb-2">
-                    Bienvenido al Panel
-                  </h3>
-                  <p className="text-slate-300 mb-4">
-                    Selecciona una acción del menú lateral para comenzar
-                  </p>
-                  <button
-                    onClick={() => setSidebarOpen(true)}
-                    className="lg:hidden px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl hover:scale-105 transition-all duration-300 font-medium shadow-lg"
-                  >
-                    Abrir Menú
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </main>
-      </div>
+          <button
+            onClick={handleMoveBetweenPoints}
+            disabled={isCreating}
+            className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-lg disabled:opacity-50 flex items-center justify-center gap-3 shadow-lg hover:shadow-emerald-500/30 transition-all"
+          >
+            <ArrowLeftRight className="w-6 h-6" />
+            {isCreating ? "Procesando..." : "Realizar Transferencia"}
+            <ArrowRight className="w-6 h-6" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
 
-export default PointSale;
+export default FormMovementStock;

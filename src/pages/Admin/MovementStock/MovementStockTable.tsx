@@ -24,7 +24,7 @@ import { useSearchProductsByCode } from "@/hooks/admin/Product/useSearchProducts
 import { useGetProductsByCategory } from "@/hooks/admin/Product/useGetProductsByCategory";
 import { useGetAllCategories } from "@/hooks/admin/Category/useGetAllCategories";
 
-import FormMovementStock from "./FormMovementStock";
+import FormMovementStock from "@/pages/Admin/MovementStock/formMovementStock/FormMovementStock"
 import type { Product } from "@/hooks/admin/Product/productType";
 
 const TableReponerStock = () => {

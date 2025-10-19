@@ -271,7 +271,7 @@ export default function FormCreateIncomeSportCourt() {
                       control={control}
                       rules={{
                         required: "El precio es requerido",
-                        min: { value: 0.01, message: "El precio debe ser mayor a 0" },
+                        min: { value: 1, message: "El precio debe ser mayor a 0" },
                       }}
                       render={({ field: { onChange, value, ...field } }) => (
                         <NumericFormat
@@ -282,10 +282,10 @@ export default function FormCreateIncomeSportCourt() {
                           }}
                           thousandSeparator=","
                           decimalSeparator="."
-                          decimalScale={2}
-                          fixedDecimalScale={true}
+                          decimalScale={0}
+                          allowNegative={false}
                           prefix="$"
-                          placeholder="$0.00"
+                          placeholder="$0"
                           disabled={isCreating}
                           className="w-full px-4 py-3 bg-slate-800 text-white border border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                         />
@@ -325,10 +325,10 @@ export default function FormCreateIncomeSportCourt() {
                           }}
                           thousandSeparator=","
                           decimalSeparator="."
-                          decimalScale={2}
-                          fixedDecimalScale={true}
+                          decimalScale={0}
+                          allowNegative={false}
                           prefix="$"
-                          placeholder="$0.00"
+                          placeholder="$0"
                           disabled={isCreating}
                           className="w-full px-4 py-3 bg-slate-800 text-white border border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                         />

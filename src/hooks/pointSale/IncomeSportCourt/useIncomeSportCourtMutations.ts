@@ -7,7 +7,8 @@ import type { IncomeSportCourtCreateData } from "./IncomeSportCourtTypes";
 // Query keys que se invalidarán después de las mutaciones
 const QUERIES_TO_INVALIDATE = [
   "getAllIncomeSportsCourt",
-  "IncomeSportCourtGetById", 
+  "IncomeSportCourtGetById",
+  "getIncomesSportCourtByDate",
   // Agrega aquí otros query keys relacionados según sea necesario
 ];
 
@@ -15,6 +16,13 @@ interface ApiSuccessResponse<T> {
   status: boolean;
   body: T;
   message: string;
+}
+
+// Interface para la actualización de pago
+interface UpdatePaymentData {
+  id: number;
+  rest_pay: number;
+  rest_payment_method: "efectivo" | "tarjeta" | "transferencia";
 }
 
 // Función para crear IncomeSportCourt
@@ -30,9 +38,19 @@ const createIncomeSportCourt = async (formData: IncomeSportCourtCreateData): Pro
 // Función para eliminar IncomeSportCourt
 const deleteIncomeSportCourt = async (id: number): Promise<void> => {
   await apiClubNorte.delete(
-    `/api/v1/income-sport-court/delete/${id}`,
+    `/api/v1/income_sport_court/delete/${id}`,
     { withCredentials: true }
   );
+};
+
+// Función para actualizar el pago
+const updateIncomeSportCourtPayment = async (paymentData: UpdatePaymentData): Promise<ApiSuccessResponse<string>> => {
+  const { data } = await apiClubNorte.put(
+    "/api/v1/income_sport_court/update_pay",
+    paymentData,
+    { withCredentials: true }
+  );
+  return data;
 };
 
 export const useIncomeSportCourtMutations = () => {
@@ -68,29 +86,53 @@ export const useIncomeSportCourtMutations = () => {
     },
   });
 
+  // Mutación para actualizar pago
+  const updatePaymentMutation = useMutation({
+    mutationFn: updateIncomeSportCourtPayment,
+    onSuccess: async (data) => {
+      await invalidateQueries(QUERIES_TO_INVALIDATE);
+      console.log("Pago actualizado:", data);
+    },
+    onError: (error) => {
+      const apiError = getApiError(error);
+      const errorMessage = apiError?.message || "Error desconocido";
+      console.error("Error al actualizar pago:", errorMessage);
+      alert(`❌ ${errorMessage}`);
+    },
+  });
+
   return {
     // Funciones de mutación
     createIncomeSportCourt: createMutation.mutate,
     deleteIncomeSportCourt: deleteMutation.mutate,
-    
+    updateIncomeSportCourtPayment: updatePaymentMutation.mutate,
+
     // Estados de loading
     isCreating: createMutation.isPending,
     isDeleting: deleteMutation.isPending,
-    
+    isUpdatingPayment: updatePaymentMutation.isPending,
+
     // Estados de éxito
     isCreated: createMutation.isSuccess,
     isDeleted: deleteMutation.isSuccess,
-    
+    isPaymentUpdated: updatePaymentMutation.isSuccess,
+
     // Errores
     createError: createMutation.error,
     deleteError: deleteMutation.error,
-    
+    updatePaymentError: updatePaymentMutation.error,
+
     // Funciones de reset (para limpiar estados)
     resetCreateState: createMutation.reset,
     resetDeleteState: deleteMutation.reset,
-    
+    resetUpdatePaymentState: updatePaymentMutation.reset,
+
     // Mutaciones completas (por si necesitas más control)
     createMutation,
     deleteMutation,
+    updatePaymentMutation,
   };
 };
+
+// Exportar el tipo para usarlo en otros archivos
+export type { UpdatePaymentData };

@@ -27,6 +27,8 @@ import Modal from "@/components/generic/Modal";
 import { useGetIncomesByDate } from "@/hooks/pointSale/Income/useGetIncomesByDate";
 import type { Income } from "@/hooks/pointSale/Income/incomeTypes";
 import IncomeActions from "./IncomeActions/IncomeActions";
+import { PRESET_BUTTONS, type DateRange } from "@/utils/timeFilter/dateRangeUtils";
+import DateRangePicker from "@/utils/timeFilter/DateRangePicker";
 
 const TableIncomes = () => {
   /**
@@ -51,19 +53,16 @@ const TableIncomes = () => {
   /**
    * Estado para filtros de fecha
    */
-  const formatDate = (date: Date) => date.toISOString().split("T")[0];
-
-  const today = formatDate(new Date());
-
-  const [fromDate, setFromDate] = useState(today);
-  const [toDate, setToDate] = useState(today);
+  const [dateRange, setDateRange] = useState<DateRange>(
+    PRESET_BUTTONS.today.getRange()
+  );
 
   /**
    * Params dinámicos con el rango de fechas
    */
   const params = {
-    from_date: fromDate,
-    to_date: toDate,
+    from_date: dateRange.from,
+    to_date: dateRange.to,
   };
 
   /**
@@ -181,52 +180,15 @@ const TableIncomes = () => {
           </div>
         </div>
 
-        {/* Filtros mejorados */}
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-          <div className="flex items-center gap-2 mb-4">
-            <Calendar className="w-5 h-5 text-indigo-400" />
-            <h3 className="text-lg font-semibold text-white">Filtro por Fechas</h3>
-          </div>
-          
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex flex-col">
-              <label className="text-slate-400 text-sm mb-1 flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                Desde:
-              </label>
-              <input
-                type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                className="bg-slate-800/50 border border-slate-600 text-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-slate-400 text-sm mb-1 flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                Hasta:
-              </label>
-              <input
-                type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                className="bg-slate-800/50 border border-slate-600 text-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-              />
-            </div>
-            <div className="flex items-end">
-              <button
-                onClick={() => {
-                  setFromDate(today);
-                  setToDate(today);
-                }}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors flex items-center gap-2"
-              >
-                <Calendar className="w-4 h-4" />
-                Hoy
-              </button>
-            </div>
-          </div>
-        </div>
+        {/* Filtros con DateRangePicker */}
+        <DateRangePicker
+          dateRange={dateRange}
+          onChange={setDateRange}
+          presets={['today', 'last7days', 'last30days']}
+          defaultPreset="today"
+          showTitle={true}
+          buttonStyle="default"
+        />
 
         {/* Tabla */}
         <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-lg">
@@ -449,9 +411,9 @@ const TableIncomes = () => {
               <span className="text-sm text-slate-400">Período Seleccionado</span>
             </div>
             <div className="text-sm font-bold text-pink-400">
-              {fromDate === toDate 
-                ? new Date(fromDate).toLocaleDateString('es-AR')
-                : `${new Date(fromDate).toLocaleDateString('es-AR')} - ${new Date(toDate).toLocaleDateString('es-AR')}`
+              {dateRange.from === dateRange.to 
+                ? new Date(dateRange.from).toLocaleDateString('es-AR')
+                : `${new Date(dateRange.from).toLocaleDateString('es-AR')} - ${new Date(dateRange.to).toLocaleDateString('es-AR')}`
               }
             </div>
           </div>

@@ -135,7 +135,7 @@ export default function ProductSearchByName({
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <div className="font-medium text-sm sm:text-base truncate">{product.name}</div>
+                        <div className="font-medium text-sm sm:text-base truncate text-slate-300">{product.name}</div>
                         {isAlreadySelected && (
                           <span className="px-2 py-1 text-xs bg-yellow-900 text-yellow-300 rounded-full flex-shrink-0">
                             Ya agregado

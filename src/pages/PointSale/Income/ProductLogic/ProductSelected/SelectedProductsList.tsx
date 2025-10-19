@@ -1,6 +1,7 @@
 import { Search, X, Edit3 } from 'lucide-react';
 import { type UseFormRegister, type FieldArrayWithId } from 'react-hook-form';
 import { useState } from 'react';
+import { NumericFormat } from 'react-number-format';
 import QuantityEditModal from './QuantityEditModal';
 import type { Product } from '@/hooks/pointSale/ProductPointSale/useGetAllProductsPointSale';
 import type { IncomeCreateData } from '@/hooks/pointSale/Income/incomeTypes';
@@ -124,7 +125,15 @@ export default function SelectedProductsList({
                     {/* Info row: Precio, Cantidad, Subtotal */}
                     <div className="flex items-center justify-between">
                       <div className="text-slate-300 font-medium">
-                        ${product?.price?.toFixed(2) || '0.00'}
+                        <NumericFormat
+                          value={product?.price || 0}
+                          displayType="text"
+                          thousandSeparator="."
+                          decimalSeparator=","
+                          prefix="$"
+                          decimalScale={0}
+                          fixedDecimalScale
+                        />
                       </div>
                       
                       <div className="flex items-center gap-2 bg-slate-700/30 px-3 py-1.5 rounded-lg">
@@ -136,7 +145,15 @@ export default function SelectedProductsList({
                       </div>
 
                       <div className="text-emerald-400 font-semibold">
-                        ${subtotal.toFixed(2)}
+                        <NumericFormat
+                          value={subtotal}
+                          displayType="text"
+                          thousandSeparator="."
+                          decimalSeparator=","
+                          prefix="$"
+                          decimalScale={0}
+                          fixedDecimalScale
+                        />
                       </div>
                     </div>
                   </div>
@@ -213,14 +230,31 @@ export default function SelectedProductsList({
                       {/* Precio × Cantidad */}
                       <td className="px-2 py-3 text-center">
                         <div className="text-slate-300 text-sm">
-                          ${product?.price?.toFixed(2) || '0.00'} × {quantity}
+                          <NumericFormat
+                            value={product?.price || 0}
+                            displayType="text"
+                            thousandSeparator="."
+                            decimalSeparator=","
+                            prefix="$"
+                            decimalScale={0}
+                            fixedDecimalScale
+                          />
+                          {' × '}{quantity}
                         </div>
                       </td>
 
                       {/* Subtotal */}
                       <td className="px-4 py-3 text-right">
                         <div className="text-emerald-400 font-semibold text-sm">
-                          ${subtotal.toFixed(2)}
+                          <NumericFormat
+                            value={subtotal}
+                            displayType="text"
+                            thousandSeparator="."
+                            decimalSeparator=","
+                            prefix="$"
+                            decimalScale={0}
+                            fixedDecimalScale
+                          />
                         </div>
                       </td>
 
