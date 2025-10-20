@@ -1,0 +1,471 @@
+import React, { useState } from "react";
+import { usePointSaleGetAll } from "@/hooks/pointSale/usePointSaleGetAll";
+import { useGetProductById } from "@/hooks/admin/Product/useGetProductById";
+import SuccessMessage from "@/components/generic/SuccessMessage";
+import { getApiError } from "@/utils/apiError";
+import { Package, Warehouse, Store, ArrowRight, ArrowLeftRight, ChevronLeft } from "lucide-react";
+import { useMovementStockMutations } from "@/hooks/admin/MovementStock/useMovementStockMutations";
+
+interface FormMovementStockProps {
+  productId: number;
+}
+
+const FormMovementStock: React.FC<FormMovementStockProps> = ({ productId }) => {
+  const { pointSales, isLoading: isLoadingPoints } = usePointSaleGetAll();
+  const {
+    product,
+    isLoading: isLoadingProduct,
+    isError,
+  } = useGetProductById(productId);
+
+  const {
+    createMovementStock,
+    isCreating,
+    isCreated,
+    createError,
+    resetCreateState
+  } = useMovementStockMutations();
+
+  // Estados para depósito → puntos de venta
+  const [selectedPoints, setSelectedPoints] = useState<{ id: number; amount: number }[]>([]);
+  const [ignoreStockDeposit, setIgnoreStockDeposit] = useState(false);
+
+  // Estados para punto de venta → depósito/otro punto
+  const [fromPointId, setFromPointId] = useState<number | "">("");
+  const [toPointId, setToPointId] = useState<number | "">("");
+  const [moveAmount, setMoveAmount] = useState<number>(0);
+  const [ignoreStockPoints, setIgnoreStockPoints] = useState(false);
+
+  // Estado para controlar qué método está activo
+  const [activeMethod, setActiveMethod] = useState<"selection" | "deposit" | "points">("selection");
+
+  // Función para resetear todos los estados del formulario
+  const resetAllStates = () => {
+    setSelectedPoints([]);
+    setIgnoreStockDeposit(false);
+    setFromPointId("");
+    setToPointId("");
+    setMoveAmount(0);
+    setIgnoreStockPoints(false);
+    setActiveMethod("selection");
+  };
+
+  // Obtener mensaje de error de la mutación
+  const mutationApiError = getApiError(createError);
+
+  const handleCheckboxChange = (pointId: number) => {
+    setSelectedPoints((prev) => {
+      const exists = prev.find((p) => p.id === pointId);
+      if (exists) return prev.filter((p) => p.id !== pointId);
+      return [...prev, { id: pointId, amount: 0 }];
+    });
+  };
+
+  const handleAmountChange = (pointId: number, amount: number) => {
+    setSelectedPoints((prev) =>
+      prev.map((p) => (p.id === pointId ? { ...p, amount: amount >= 0 ? amount : 0 } : p))
+    );
+  };
+
+  const handleMoveFromDeposit = async () => {
+    if (!product) return;
+
+    const total = selectedPoints.reduce((sum, p) => sum + p.amount, 0);
+
+    if (total === 0) {
+      alert("Debes asignar al menos una cantidad mayor a 0.");
+      return;
+    }
+
+    if (!ignoreStockDeposit && total > (product?.stock_deposit?.stock ?? 0)) {
+      alert("No puedes mover más stock del disponible en depósito.");
+      return;
+    }
+
+    for (const point of selectedPoints) {
+      if (point.amount > 0) {
+        createMovementStock({
+          amount: point.amount,
+          from_id: 1,
+          from_type: "deposit",
+          ignore_stock: ignoreStockDeposit,
+          product_id: product.id,
+          to_id: point.id,
+          to_type: "point_sale",
+        }, {
+          onSuccess: () => {
+            resetAllStates();
+          }
+        });
+      }
+    }
+  };
+
+  const handleMoveBetweenPoints = () => {
+    if (!product) return;
+
+    if (!fromPointId || toPointId === "") {
+      alert("Debes seleccionar un punto de venta de origen y destino.");
+      return;
+    }
+
+    if (fromPointId === toPointId) {
+      alert("El origen y destino no pueden ser el mismo.");
+      return;
+    }
+
+    const fromStock =
+      product?.stock_point_sales?.find((p) => p.id === fromPointId)?.stock ?? 0;
+
+    if (moveAmount <= 0) {
+      alert("La cantidad debe ser mayor a 0.");
+      return;
+    }
+
+    if (moveAmount > fromStock && !ignoreStockPoints) {
+      alert("No puedes mover más stock del disponible en el punto de venta de origen.");
+      return;
+    }
+
+    createMovementStock({
+      amount: moveAmount,
+      from_id: fromPointId,
+      from_type: "point_sale",
+      ignore_stock: ignoreStockPoints,
+      product_id: product.id,
+      to_id: toPointId === 0 ? 1 : toPointId,
+      to_type: toPointId === 0 ? "deposit" : "point_sale",
+    }, {
+      onSuccess: () => {
+        resetAllStates();
+      }
+    });
+  };
+
+  const getStockForPointSale = (pointSaleId: number): number => {
+    return product?.stock_point_sales?.find((ps) => ps.id === pointSaleId)?.stock ?? 0;
+  };
+
+  if (isCreated) {
+    return (
+      <SuccessMessage
+        title="¡Movimiento Realizado!"
+        description="El movimiento de stock ha sido realizado exitosamente. Los inventarios han sido actualizados."
+        primaryButton={{
+          text: "Realizar Otro Movimiento",
+          onClick: () => {
+            resetCreateState();
+            resetAllStates();
+          },
+          variant: 'indigo'
+        }}
+      />
+    );
+  }
+
+  if (isLoadingPoints || isLoadingProduct) {
+    return <div className="text-slate-300 text-center">Cargando información...</div>;
+  }
+
+  if (isError || !product) {
+    return (
+      <div className="text-red-500 text-center">
+        Ocurrió un error. Contacte al administrador.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-xl font-bold text-white">Mover Stock</h2>
+
+      {mutationApiError && (
+        <div className="bg-red-500/20 border border-red-500/50 rounded-md p-3 mb-4">
+          <p className="text-red-400 text-sm text-center">
+            {mutationApiError.message}
+          </p>
+          <button
+            type="button"
+            onClick={() => resetCreateState()}
+            className="mt-2 w-full px-3 bg-red-600 hover:bg-red-500 text-white font-medium py-1.5 rounded-md text-sm transition"
+          >
+            ✕ Cerrar Error
+          </button>
+        </div>
+      )}
+
+      {/* Pantalla de selección de método */}
+      {activeMethod === "selection" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Opción 1: Depósito → Puntos de Venta */}
+          <button
+            onClick={() => setActiveMethod("deposit")}
+            className="group relative overflow-hidden rounded-xl border-2 border-slate-700 bg-gradient-to-br from-indigo-900/30 to-slate-800/50 p-8 hover:border-indigo-500 hover:from-indigo-900/50 hover:to-slate-800/70 transition-all duration-300 shadow-xl hover:shadow-indigo-500/20"
+          >
+            <div className="flex flex-col items-center gap-6">
+              <div className="relative">
+                <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-xl"></div>
+                <div className="relative bg-indigo-600 rounded-full p-6">
+                  <Warehouse className="w-12 h-12 text-white" />
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 text-slate-300">
+                <Warehouse className="w-6 h-6 text-indigo-400" />
+                <ArrowRight className="w-6 h-6 text-slate-500" />
+                <Store className="w-6 h-6 text-emerald-400" />
+              </div>
+
+              <div className="text-center">
+                <h3 className="text-xl font-bold text-white mb-2">
+                  Depósito → Puntos de Venta
+                </h3>
+                <p className="text-slate-400 text-sm">
+                  Distribuir stock desde el depósito central hacia los puntos de venta
+                </p>
+              </div>
+
+              <div className="mt-2 px-4 py-2 bg-slate-700/50 rounded-lg">
+                <p className="text-slate-300 text-sm flex items-center gap-2">
+                  <Package className="w-4 h-4 text-indigo-400" />
+                  Stock en depósito: <span className="font-bold text-indigo-400">{product?.stock_deposit?.stock ?? 0}</span>
+                </p>
+              </div>
+            </div>
+          </button>
+
+          {/* Opción 2: Entre Puntos de Venta */}
+          <button
+            onClick={() => setActiveMethod("points")}
+            className="group relative overflow-hidden rounded-xl border-2 border-slate-700 bg-gradient-to-br from-emerald-900/30 to-slate-800/50 p-8 hover:border-emerald-500 hover:from-emerald-900/50 hover:to-slate-800/70 transition-all duration-300 shadow-xl hover:shadow-emerald-500/20"
+          >
+            <div className="flex flex-col items-center gap-6">
+              <div className="relative">
+                <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl"></div>
+                <div className="relative bg-emerald-600 rounded-full p-6">
+                  <ArrowLeftRight className="w-12 h-12 text-white" />
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 text-slate-300">
+                <Store className="w-6 h-6 text-emerald-400" />
+                <ArrowLeftRight className="w-6 h-6 text-slate-500" />
+                <Store className="w-6 h-6 text-indigo-400" />
+              </div>
+
+              <div className="text-center">
+                <h3 className="text-xl font-bold text-white mb-2">
+                  Entre Puntos de Venta
+                </h3>
+                <p className="text-slate-400 text-sm">
+                  Transferir stock entre puntos de venta o devolver al depósito
+                </p>
+              </div>
+
+              <div className="mt-2 px-4 py-2 bg-slate-700/50 rounded-lg">
+                <p className="text-slate-300 text-sm flex items-center gap-2">
+                  <Store className="w-4 h-4 text-emerald-400" />
+                  Puntos disponibles: <span className="font-bold text-emerald-400">{pointSales.length}</span>
+                </p>
+              </div>
+            </div>
+          </button>
+        </div>
+      )}
+
+      {/* Método 1: Depósito → Puntos de Venta */}
+      {activeMethod === "deposit" && (
+        <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-indigo-600 rounded-lg p-3">
+                <Warehouse className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Depósito → Puntos de Venta</h3>
+                <p className="text-slate-400 text-sm">Distribuir stock desde el depósito</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveMethod("selection")}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Volver
+            </button>
+          </div>
+
+          <div className="bg-slate-700/50 rounded-lg p-4">
+            <p className="text-slate-300 flex items-center gap-2">
+              <Package className="w-5 h-5 text-emerald-400" />
+              Stock disponible en depósito:{" "}
+              <span className="font-bold text-emerald-400 text-lg">
+                {product?.stock_deposit?.stock ?? 0}
+              </span>
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {pointSales.map((point) => (
+              <div
+                key={point.id}
+                className="flex items-center gap-4 border border-slate-600 rounded-lg p-4 bg-slate-700/30 hover:bg-slate-700/50 transition"
+              >
+                <input
+                  type="checkbox"
+                  checked={!!selectedPoints.find((p) => p.id === point.id)}
+                  onChange={() => handleCheckboxChange(point.id)}
+                  disabled={isCreating}
+                  className="w-5 h-5 rounded"
+                />
+                <div className="flex-1">
+                  <span className="text-slate-200 font-medium">{point.name}</span>
+                  <span className="text-xs text-slate-400 flex items-center gap-1 mt-1">
+                    <Package className="w-3 h-3" />
+                    Stock actual: {getStockForPointSale(point.id)}
+                  </span>
+                </div>
+                <input
+                  type="number"
+                  min={0}
+                  className="w-28 px-3 py-2 rounded-lg bg-slate-800 text-white border border-slate-600 disabled:opacity-50 font-medium"
+                  disabled={!selectedPoints.find((p) => p.id === point.id) || isCreating}
+                  value={selectedPoints.find((p) => p.id === point.id)?.amount || ""}
+                  onChange={(e) => handleAmountChange(point.id, Number(e.target.value))}
+                  placeholder="0"
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-3 bg-slate-700/30 rounded-lg p-4">
+            <input
+              type="checkbox"
+              checked={ignoreStockDeposit}
+              onChange={(e) => setIgnoreStockDeposit(e.target.checked)}
+              disabled={isCreating}
+              className="w-5 h-5 rounded"
+            />
+            <label className="text-slate-300 text-sm">
+              Ignorar validación de stock (permitir stock negativo en depósito)
+            </label>
+          </div>
+
+          <button
+            onClick={handleMoveFromDeposit}
+            disabled={isCreating}
+            className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-lg disabled:opacity-50 flex items-center justify-center gap-3 shadow-lg hover:shadow-indigo-500/30 transition-all"
+          >
+            <Warehouse className="w-6 h-6" />
+            {isCreating ? "Procesando..." : "Mover desde Depósito"}
+            <ArrowRight className="w-6 h-6" />
+          </button>
+        </div>
+      )}
+
+      {/* Método 2: Entre Puntos de Venta */}
+      {activeMethod === "points" && (
+        <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-emerald-600 rounded-lg p-3">
+                <ArrowLeftRight className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Entre Puntos de Venta</h3>
+                <p className="text-slate-400 text-sm">Transferir stock entre ubicaciones</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveMethod("selection")}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Volver
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {/* Origen */}
+            <div>
+              <label className="block text-slate-300 font-medium mb-2 flex items-center gap-2">
+                <Store className="w-4 h-4 text-emerald-400" />
+                Punto de Origen
+              </label>
+              <select
+                className="w-full px-4 py-3 rounded-lg bg-slate-700 text-white border border-slate-600 disabled:opacity-50 font-medium"
+                value={fromPointId}
+                onChange={(e) => setFromPointId(Number(e.target.value))}
+                disabled={isCreating}
+              >
+                <option value="">Seleccione punto de venta de origen</option>
+                {product?.stock_point_sales?.map((ps) => (
+                  <option key={ps.id} value={ps.id}>
+                    {ps.name} (Stock: {ps.stock})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Destino */}
+            <div>
+              <label className="block text-slate-300 font-medium mb-2 flex items-center gap-2">
+                <Store className="w-4 h-4 text-indigo-400" />
+                Punto de Destino
+              </label>
+              <select
+                className="w-full px-4 py-3 rounded-lg bg-slate-700 text-white border border-slate-600 disabled:opacity-50 font-medium"
+                value={toPointId}
+                onChange={(e) => setToPointId(Number(e.target.value))}
+                disabled={isCreating}
+              >
+                <option value="">Seleccione punto de destino</option>
+                <option value={0}>
+                  🏢 Depósito (Stock: {product?.stock_deposit?.stock ?? 0})
+                </option>
+                {pointSales.map((ps) => (
+                  <option
+                    key={ps.id}
+                    value={ps.id}
+                    disabled={ps.id === fromPointId}
+                  >
+                    {ps.name} (Stock: {getStockForPointSale(ps.id)})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Cantidad */}
+            <div>
+              <label className="block text-slate-300 font-medium mb-2 flex items-center gap-2">
+                <Package className="w-4 h-4 text-slate-400" />
+                Cantidad a Transferir
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={moveAmount}
+                onChange={(e) => setMoveAmount(Number(e.target.value))}
+                className="w-full px-4 py-3 rounded-lg bg-slate-700 text-white border border-slate-600 disabled:opacity-50 font-medium text-lg"
+                disabled={isCreating}
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          <button
+            onClick={handleMoveBetweenPoints}
+            disabled={isCreating}
+            className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-lg disabled:opacity-50 flex items-center justify-center gap-3 shadow-lg hover:shadow-emerald-500/30 transition-all"
+          >
+            <ArrowLeftRight className="w-6 h-6" />
+            {isCreating ? "Procesando..." : "Realizar Transferencia"}
+            <ArrowRight className="w-6 h-6" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default FormMovementStock;

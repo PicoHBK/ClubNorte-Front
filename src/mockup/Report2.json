@@ -1,0 +1,22 @@
+[
+  { "id": 1, "code": "BEB-001", "name": "Coca Cola 500ml", "total_cost": 17000, "total_profit": 3500, "total_quantity": 68, "total_sales": 20500 },
+  { "id": 2, "code": "BEB-002", "name": "Agua Mineral 500ml", "total_cost": 4500, "total_profit": 1200, "total_quantity": 30, "total_sales": 5700 },
+  { "id": 3, "code": "BEB-003", "name": "Powerade 500ml", "total_cost": 8700, "total_profit": 2100, "total_quantity": 29, "total_sales": 10800 },
+  { "id": 4, "code": "BEB-004", "name": "Sprite Lima Limón 500ml", "total_cost": 16000, "total_profit": 3800, "total_quantity": 65, "total_sales": 19800 },
+  { "id": 5, "code": "BEB-005", "name": "Fanta Naranja 500ml", "total_cost": 15000, "total_profit": 3200, "total_quantity": 61, "total_sales": 18200 },
+  { "id": 6, "code": "SNK-001", "name": "Papas Lays Clásicas", "total_cost": 9000, "total_profit": 2500, "total_quantity": 40, "total_sales": 11500 },
+  { "id": 7, "code": "SNK-002", "name": "Doritos Queso 110g", "total_cost": 11000, "total_profit": 3000, "total_quantity": 42, "total_sales": 14000 },
+  { "id": 8, "code": "SNK-003", "name": "Maní Salado 80g", "total_cost": 6000, "total_profit": 1800, "total_quantity": 35, "total_sales": 7800 },
+  { "id": 9, "code": "SNK-004", "name": "Mix Frutos Secos", "total_cost": 14000, "total_profit": 4200, "total_quantity": 50, "total_sales": 18200 },
+  { "id": 10, "code": "SNK-005", "name": "Chocolate Milka Oreo", "total_cost": 12000, "total_profit": 3500, "total_quantity": 38, "total_sales": 15500 },
+  { "id": 11, "code": "FOOD-001", "name": "Hamburguesa Simple", "total_cost": 22000, "total_profit": 6000, "total_quantity": 32, "total_sales": 28000 },
+  { "id": 12, "code": "FOOD-002", "name": "Hamburguesa Doble", "total_cost": 30000, "total_profit": 8500, "total_quantity": 28, "total_sales": 38500 },
+  { "id": 13, "code": "FOOD-003", "name": "Panchos con Papas", "total_cost": 13000, "total_profit": 3800, "total_quantity": 37, "total_sales": 16800 },
+  { "id": 14, "code": "FOOD-004", "name": "Papas Fritas Grande", "total_cost": 10000, "total_profit": 3200, "total_quantity": 45, "total_sales": 13200 },
+  { "id": 15, "code": "FOOD-005", "name": "Tostado Jamón y Queso", "total_cost": 8000, "total_profit": 2600, "total_quantity": 33, "total_sales": 10600 },
+  { "id": 16, "code": "CAF-001", "name": "Café Espresso", "total_cost": 7000, "total_profit": 3000, "total_quantity": 50, "total_sales": 10000 },
+  { "id": 17, "code": "CAF-002", "name": "Café con Leche", "total_cost": 8500, "total_profit": 3500, "total_quantity": 54, "total_sales": 12000 },
+  { "id": 18, "code": "CAF-003", "name": "Capuccino", "total_cost": 9000, "total_profit": 3800, "total_quantity": 48, "total_sales": 12800 },
+  { "id": 19, "code": "CAF-004", "name": "Submarino", "total_cost": 10000, "total_profit": 4000, "total_quantity": 44, "total_sales": 14000 },
+  { "id": 20, "code": "CAF-005", "name": "Medialuna", "total_cost": 6000, "total_profit": 2000, "total_quantity": 60, "total_sales": 8000 }
+]

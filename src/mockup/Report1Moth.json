@@ -1,0 +1,162 @@
+[
+  {
+    "fecha": "2025-10",
+    "movimiento": [
+      {
+        "balance": 21750,
+        "fecha": "2025-10",
+        "point_sale_id": 1,
+        "point_sale_name": "punto central",
+        "total_canchas": 9000,
+        "total_egresos": 4500,
+        "total_ingresos": 17250
+      },
+      {
+        "balance": 5900,
+        "fecha": "2025-10",
+        "point_sale_id": 2,
+        "point_sale_name": "cancha norte",
+        "total_canchas": 9000,
+        "total_egresos": 9500,
+        "total_ingresos": 6400
+      },
+      {
+        "balance": 10150,
+        "fecha": "2025-10",
+        "point_sale_id": 3,
+        "point_sale_name": "área de descanso",
+        "total_canchas": 9000,
+        "total_egresos": 5400,
+        "total_ingresos": 6550
+      }
+    ]
+  },
+  {
+    "fecha": "2025-09",
+    "movimiento": [
+      {
+        "balance": 19800,
+        "fecha": "2025-09",
+        "point_sale_id": 1,
+        "point_sale_name": "punto central",
+        "total_canchas": 8500,
+        "total_egresos": 4200,
+        "total_ingresos": 15500
+      },
+      {
+        "balance": 7200,
+        "fecha": "2025-09",
+        "point_sale_id": 2,
+        "point_sale_name": "cancha norte",
+        "total_canchas": 8800,
+        "total_egresos": 8000,
+        "total_ingresos": 6400
+      },
+      {
+        "balance": 9500,
+        "fecha": "2025-09",
+        "point_sale_id": 3,
+        "point_sale_name": "área de descanso",
+        "total_canchas": 8700,
+        "total_egresos": 5000,
+        "total_ingresos": 5800
+      }
+    ]
+  },
+  {
+    "fecha": "2025-08",
+    "movimiento": [
+      {
+        "balance": 21000,
+        "fecha": "2025-08",
+        "point_sale_id": 1,
+        "point_sale_name": "punto central",
+        "total_canchas": 9200,
+        "total_egresos": 4800,
+        "total_ingresos": 16600
+      },
+      {
+        "balance": 6800,
+        "fecha": "2025-08",
+        "point_sale_id": 2,
+        "point_sale_name": "cancha norte",
+        "total_canchas": 9050,
+        "total_egresos": 8600,
+        "total_ingresos": 6350
+      },
+      {
+        "balance": 10300,
+        "fecha": "2025-08",
+        "point_sale_id": 3,
+        "point_sale_name": "área de descanso",
+        "total_canchas": 8900,
+        "total_egresos": 5200,
+        "total_ingresos": 6600
+      }
+    ]
+  },
+  {
+    "fecha": "2025-07",
+    "movimiento": [
+      {
+        "balance": 19000,
+        "fecha": "2025-07",
+        "point_sale_id": 1,
+        "point_sale_name": "punto central",
+        "total_canchas": 8800,
+        "total_egresos": 4500,
+        "total_ingresos": 14700
+      },
+      {
+        "balance": 6400,
+        "fecha": "2025-07",
+        "point_sale_id": 2,
+        "point_sale_name": "cancha norte",
+        "total_canchas": 8700,
+        "total_egresos": 8300,
+        "total_ingresos": 6000
+      },
+      {
+        "balance": 9200,
+        "fecha": "2025-07",
+        "point_sale_id": 3,
+        "point_sale_name": "área de descanso",
+        "total_canchas": 8600,
+        "total_egresos": 4900,
+        "total_ingresos": 5500
+      }
+    ]
+  },
+  {
+    "fecha": "2025-06",
+    "movimiento": [
+      {
+        "balance": 20200,
+        "fecha": "2025-06",
+        "point_sale_id": 1,
+        "point_sale_name": "punto central",
+        "total_canchas": 9000,
+        "total_egresos": 4300,
+        "total_ingresos": 15500
+      },
+      {
+        "balance": 7000,
+        "fecha": "2025-06",
+        "point_sale_id": 2,
+        "point_sale_name": "cancha norte",
+        "total_canchas": 8800,
+        "total_egresos": 8500,
+        "total_ingresos": 6200
+      },
+      {
+        "balance": 9800,
+        "fecha": "2025-06",
+        "point_sale_id": 3,
+        "point_sale_name": "área de descanso",
+        "total_canchas": 8700,
+        "total_egresos": 5000,
+        "total_ingresos": 5900
+      }
+    ]
+  }
+]
