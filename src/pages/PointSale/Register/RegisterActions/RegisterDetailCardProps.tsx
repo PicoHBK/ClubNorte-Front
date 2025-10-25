@@ -4,6 +4,7 @@ import { useGetRegisterById } from '@/hooks/admin/Register/useGetRegisterById';
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { NumericFormat } from 'react-number-format';
+import { format } from 'date-fns';
 
 interface RegisterDetailCardProps {
   id: number;
@@ -22,27 +23,36 @@ const RegisterDetailCard: React.FC<RegisterDetailCardProps> = ({ id }) => {
     }).format(new Date(dateString));
   };
 
-  // Calcular totales de canchas deportivas
+  // Calcular totales de canchas deportivas (solo pagos de la fecha del registro)
   const calculateSportsCourtTotals = () => {
     if (!register?.income_sports_courts) return { cash: 0, others: 0, total: 0 };
+    
+    // Obtener solo la fecha (sin hora) del registro usando date-fns
+    const registerDate = format(new Date(register.hour_open), 'yyyy-MM-dd');
     
     let cash = 0;
     let others = 0;
     
     register.income_sports_courts.forEach(income => {
-      // Pago parcial
-      if (income.partial_payment_method === 'efectivo') {
-        cash += income.partial_pay;
-      } else {
-        others += income.partial_pay;
+      // Verificar si el pago parcial se hizo en la fecha del registro
+      const partialDate = format(new Date(income.date_partial_pay), 'yyyy-MM-dd');
+      if (partialDate === registerDate) {
+        if (income.partial_payment_method === 'efectivo') {
+          cash += income.partial_pay;
+        } else {
+          others += income.partial_pay;
+        }
       }
       
-      // Pago restante
-      if (income.rest_pay) {
-        if (income.rest_payment_method === 'efectivo') {
-          cash += income.rest_pay;
-        } else {
-          others += income.rest_pay;
+      // Verificar si el pago restante existe y se hizo en la fecha del registro
+      if (income.rest_pay && income.date_rest_pay) {
+        const restDate = format(new Date(income.date_rest_pay), 'yyyy-MM-dd');
+        if (restDate === registerDate) {
+          if (income.rest_payment_method === 'efectivo') {
+            cash += income.rest_pay;
+          } else {
+            others += income.rest_pay;
+          }
         }
       }
     });

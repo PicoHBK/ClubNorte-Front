@@ -45,3 +45,11 @@ export interface ProductUpdateData {
   min_amount: number;
   notifier: boolean;
 }
+
+// para edición masiva de precios
+export interface BulkPriceUpdate {
+  list: {
+    id: number;
+    price: number;
+  }[];
+}
