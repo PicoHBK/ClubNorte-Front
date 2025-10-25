@@ -59,6 +59,16 @@ const deleteUser = async (id: number): Promise<void> => {
   );
 };
 
+// Función para actualizar contraseña genérica (admin)
+const updatePasswordGeneric = async (id: number): Promise<ApiSuccessResponse<string>> => {
+  const { data } = await apiClubNorte.put(
+    `/api/v1/user/update_password_generic/${id}`,
+    {},
+    { withCredentials: true }
+  );
+  return data;
+};
+
 export const useUserMutations = () => {
   const invalidateQueries = useInvalidateQueries();
 
@@ -105,35 +115,57 @@ export const useUserMutations = () => {
     },
   });
 
+  // Mutación para actualizar contraseña genérica
+  const updatePasswordMutation = useMutation({
+    mutationFn: updatePasswordGeneric,
+    onSuccess: async (data) => {
+      console.log("Contraseña actualizada:", data);
+    },
+    onError: (error) => {
+      const apiError = getApiError(error);
+      const errorMessage = apiError?.message || "Error desconocido";
+      console.error("Error al actualizar contraseña:", errorMessage);
+    },
+  });
+
   return {
     // Funciones de mutación
     createUser: createMutation.mutate,
     updateUser: updateMutation.mutate,
     deleteUser: deleteMutation.mutate,
+    updatePassword: updatePasswordMutation.mutate,
     
     // Estados de loading
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
+    isUpdatingPassword: updatePasswordMutation.isPending,
     
     // Estados de éxito
     isCreated: createMutation.isSuccess,
     isUpdated: updateMutation.isSuccess,
     isDeleted: deleteMutation.isSuccess,
+    isPasswordUpdated: updatePasswordMutation.isSuccess,
+    
+    // Data (para obtener la nueva contraseña)
+    newPassword: updatePasswordMutation.data?.body,
     
     // Errores
     createError: createMutation.error,
     updateError: updateMutation.error,
     deleteError: deleteMutation.error,
+    updatePasswordError: updatePasswordMutation.error,
     
     // Funciones de reset (para limpiar estados)
     resetCreateState: createMutation.reset,
     resetUpdateState: updateMutation.reset,
     resetDeleteState: deleteMutation.reset,
+    resetPasswordState: updatePasswordMutation.reset,
     
     // Mutaciones completas (por si necesitas más control)
     createMutation,
     updateMutation,
     deleteMutation,
+    updatePasswordMutation,
   };
 };

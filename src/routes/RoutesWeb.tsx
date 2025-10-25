@@ -8,6 +8,7 @@ import DownloadReports from "@/pages/Reports/ReportFor/DownloadReports";
 import ProfitableProductsReport from "@/pages/Reports/ReportFor/ProfitableProductsReport";
 import ReportBase from "@/pages/Reports/ReportFor/ReportBase";
 import StockControlReport from "@/pages/Reports/ReportFor/StockControlReport";
+import StockMovementsReport from "@/pages/Reports/ReportFor/StockMovementsReport";
 import Reports from "@/pages/Reports/Reports";
 import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 
@@ -55,6 +56,10 @@ const routers = createBrowserRouter([
       {
         path: "reports/informe-stock",
         element: <StockControlReport />,
+      },
+      {
+        path: "reports/stock-movement",
+        element: <StockMovementsReport/>,
       },
       {
         path: "reports/descargar-informe",

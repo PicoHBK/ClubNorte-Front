@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { type LucideIcon, Store, PackageCheck, FileSpreadsheet, } from 'lucide-react';
+import { type LucideIcon, Store, PackageCheck, FileSpreadsheet, ArrowRightLeft } from 'lucide-react';
 
 interface Informe {
   id: number;
@@ -14,42 +14,48 @@ interface Informe {
 const Reports: React.FC = () => {
   const navigate = useNavigate();
 
-
-const informes: Informe[] = [
-  {
-    id: 1,
-    titulo: 'Rentabilidad por Punto de Venta',
-    descripcion: 'Comparativa de rendimiento económico entre sucursales',
-    icono: Store,
-    ruta: '/reports/puntos-venta-rentabilidad',
-    color: 'from-indigo-600 to-indigo-500'
-  },
-  {
-    id: 2,
-    titulo: 'Productos Más Rentables',
-    descripcion: 'Ranking de productos con mejor margen de ganancia',
-    icono: PackageCheck,
-    ruta: '/reports/productos-rentables',
-    color: 'from-emerald-500 to-emerald-400'
-  },
-  {
-    id: 4,
-    titulo: 'Control de Stock',
-    descripcion: 'Informe de Stock',
-    icono: PackageCheck,
-    ruta: '/reports/informe-stock',
-    color: 'from-emerald-500 to-emerald-400'
-  },
-  {
-    id: 3,
-    titulo: 'Descargar Reporte en Excel',
-    descripcion: 'Descarga un archivo Excel con todos los datos consolidados',
-    icono: FileSpreadsheet,
-    ruta: '/reports/descargar-informe',
-    color: 'from-indigo-600 to-indigo-500'
-  }
-];
-
+  const informes: Informe[] = [
+    {
+      id: 1,
+      titulo: 'Rentabilidad por Punto de Venta',
+      descripcion: 'Comparativa de rendimiento económico entre sucursales',
+      icono: Store,
+      ruta: '/reports/puntos-venta-rentabilidad',
+      color: 'from-indigo-600 to-indigo-500'
+    },
+    {
+      id: 2,
+      titulo: 'Productos Más Rentables',
+      descripcion: 'Ranking de productos con mejor margen de ganancia',
+      icono: PackageCheck,
+      ruta: '/reports/productos-rentables',
+      color: 'from-emerald-500 to-emerald-400'
+    },
+    {
+      id: 4,
+      titulo: 'Control de Stock',
+      descripcion: 'Informe de Stock',
+      icono: PackageCheck,
+      ruta: '/reports/informe-stock',
+      color: 'from-emerald-500 to-emerald-400'
+    },
+    {
+      id: 5,
+      titulo: 'Movimientos de Stock',
+      descripcion: 'Análisis completo de transferencias entre depósitos y puntos de venta',
+      icono: ArrowRightLeft,
+      ruta: '/reports/stock-movement',
+      color: 'from-blue-600 to-blue-500'
+    },
+    {
+      id: 3,
+      titulo: 'Descargar Reporte en Excel',
+      descripcion: 'Descarga un archivo Excel con todos los datos consolidados',
+      icono: FileSpreadsheet,
+      ruta: '/reports/descargar-informe',
+      color: 'from-indigo-600 to-indigo-500'
+    }
+  ];
 
   const irAInforme = (ruta: string): void => {
     navigate(ruta);
